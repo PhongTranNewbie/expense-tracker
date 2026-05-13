@@ -1,3 +1,5 @@
+import { mockExpenses } from "@/components/expenses/mock-expenses";
+import { ExpensesTable } from "@/components/expenses/expenses-table";
 import { SummaryCard } from "@/components/ui/summary-card";
 
 const summaryMock = [
@@ -44,9 +46,7 @@ export default function Home() {
           />
         ))}
       </div>
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 p-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400">
-        Connect accounts or add expenses to see activity here.
-      </div>
+      <ExpensesTable expenses={mockExpenses} />
     </div>
   );
 }

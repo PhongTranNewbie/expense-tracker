@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type ExpenseRow = {
   id: string;
   category: string;
@@ -9,6 +11,8 @@ export type ExpenseRow = {
 type ExpensesTableProps = {
   expenses: ExpenseRow[];
   title?: string;
+  /** e.g. primary actions shown next to the section title */
+  actions?: ReactNode;
 };
 
 const th =
@@ -19,12 +23,18 @@ const td =
 export function ExpensesTable({
   expenses,
   title = "Recent expenses",
+  actions,
 }: ExpensesTableProps) {
   return (
     <section className="space-y-3">
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-        {title}
-      </h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+          {title}
+        </h2>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
+      </div>
 
       <ul className="space-y-3 sm:hidden">
         {expenses.map((row) => (

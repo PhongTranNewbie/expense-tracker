@@ -1,5 +1,4 @@
-import { mockExpenses } from "@/components/expenses/mock-expenses";
-import { ExpensesTable } from "@/components/expenses/expenses-table";
+import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
 import { SummaryCard } from "@/components/ui/summary-card";
 
 const summaryMock = [
@@ -46,7 +45,7 @@ export default function Home() {
           />
         ))}
       </div>
-      <ExpensesTable expenses={mockExpenses} />
+      <DashboardExpensesSection />
     </div>
   );
 }

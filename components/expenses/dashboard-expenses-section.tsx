@@ -23,6 +23,14 @@ function formatUsd(amount: number): string {
   }).format(amount);
 }
 
+/** Parse stored display amount (e.g. "$124.50") for the amount input */
+function amountForInput(displayAmount: string): string {
+  const cleaned = displayAmount.replace(/[$\s]/g, "").replace(/,/g, "");
+  const n = Number.parseFloat(cleaned);
+  if (Number.isNaN(n)) return "";
+  return (Math.round(n * 100) / 100).toString();
+}
+
 function validate(
   category: string,
   amountRaw: string,
@@ -56,6 +64,7 @@ export function DashboardExpensesSection() {
     ...mockExpenses,
   ]);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -65,18 +74,41 @@ export function DashboardExpensesSection() {
   );
   const [errors, setErrors] = useState<FormErrors>({});
 
+  const isEdit = editingId !== null;
+
   const resetForm = useCallback(() => {
     setCategory("");
     setAmount("");
     setDate("");
     setPaymentMethod(PAYMENT_OPTIONS[0]);
     setErrors({});
+    setEditingId(null);
   }, []);
 
   const closeModal = useCallback(() => {
     setOpen(false);
     resetForm();
   }, [resetForm]);
+
+  const openAddModal = useCallback(() => {
+    resetForm();
+    setOpen(true);
+  }, [resetForm]);
+
+  const openEditModal = useCallback((row: ExpenseRow) => {
+    setEditingId(row.id);
+    setCategory(row.category);
+    setAmount(amountForInput(row.amount));
+    setDate(row.date);
+    setPaymentMethod(row.paymentMethod);
+    setErrors({});
+    setOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((row: ExpenseRow) => {
+    if (!window.confirm("Remove this expense?")) return;
+    setExpenses((prev) => prev.filter((r) => r.id !== row.id));
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -94,25 +126,39 @@ export function DashboardExpensesSection() {
     if (Object.keys(next).length > 0) return;
 
     const n = Number.parseFloat(amount.trim().replace(/,/g, ""));
-    const row: ExpenseRow = {
-      id: crypto.randomUUID(),
+    const base = {
       category: category.trim(),
       amount: formatUsd(n),
       date,
       paymentMethod,
     };
-    setExpenses((prev) => [row, ...prev]);
+
+    if (editingId) {
+      setExpenses((prev) =>
+        prev.map((r) => (r.id === editingId ? { ...r, ...base } : r)),
+      );
+    } else {
+      const row: ExpenseRow = {
+        id: crypto.randomUUID(),
+        ...base,
+      };
+      setExpenses((prev) => [row, ...prev]);
+    }
     closeModal();
   }
+
+  const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
 
   return (
     <>
       <ExpensesTable
         expenses={expenses}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
         actions={
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={openAddModal}
             className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
             Add expense
@@ -134,15 +180,15 @@ export function DashboardExpensesSection() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="add-expense-title"
+            aria-labelledby="expense-modal-title"
             className="relative z-10 flex max-h-[min(92vh,640px)] w-full max-w-md flex-col rounded-t-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl"
           >
             <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
               <h3
-                id="add-expense-title"
+                id="expense-modal-title"
                 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
               >
-                Add expense
+                {isEdit ? "Edit expense" : "Add expense"}
               </h3>
               <button
                 type="button"
@@ -269,6 +315,9 @@ export function DashboardExpensesSection() {
                     }}
                     className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
                   >
+                    {!paymentKnown && paymentMethod ? (
+                      <option value={paymentMethod}>{paymentMethod}</option>
+                    ) : null}
                     {PAYMENT_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -295,7 +344,7 @@ export function DashboardExpensesSection() {
                   type="submit"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                 >
-                  Save expense
+                  {isEdit ? "Update expense" : "Save expense"}
                 </button>
               </div>
             </form>

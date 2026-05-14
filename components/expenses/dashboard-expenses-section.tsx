@@ -12,6 +12,20 @@ const PAYMENT_OPTIONS = [
   "Cash",
 ] as const;
 
+const EXPENSES_STORAGE_KEY = "expense-tracker:expenses:v1";
+
+function isExpenseRow(value: unknown): value is ExpenseRow {
+  if (typeof value !== "object" || value === null) return false;
+  const o = value as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.category === "string" &&
+    typeof o.amount === "string" &&
+    typeof o.date === "string" &&
+    typeof o.paymentMethod === "string"
+  );
+}
+
 type FormErrors = Partial<
   Record<"category" | "amount" | "date" | "paymentMethod", string>
 >;
@@ -63,6 +77,7 @@ export function DashboardExpensesSection() {
   const [expenses, setExpenses] = useState<ExpenseRow[]>(() => [
     ...mockExpenses,
   ]);
+  const [storageReady, setStorageReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -109,6 +124,41 @@ export function DashboardExpensesSection() {
     if (!window.confirm("Remove this expense?")) return;
     setExpenses((prev) => prev.filter((r) => r.id !== row.id));
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(EXPENSES_STORAGE_KEY);
+      if (raw === null || raw === "") {
+        setStorageReady(true);
+        return;
+      }
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        setStorageReady(true);
+        return;
+      }
+      if (parsed.length === 0) {
+        setExpenses([]);
+        setStorageReady(true);
+        return;
+      }
+      if (parsed.every(isExpenseRow)) {
+        setExpenses(parsed);
+      }
+    } catch {
+      /* keep initial mock */
+    }
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    try {
+      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [expenses, storageReady]);
 
   useEffect(() => {
     if (!open) return;

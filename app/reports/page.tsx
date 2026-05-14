@@ -1,7 +1,9 @@
+import { ReportsView } from "@/components/reports/reports-view";
+
 export default function ReportsPage() {
   return (
-    <p className="text-sm text-zinc-600 dark:text-zinc-400">
-      Reports and exports will go here.
-    </p>
+    <div className="mx-auto max-w-6xl space-y-2 pb-6">
+      <ReportsView />
+    </div>
   );
 }

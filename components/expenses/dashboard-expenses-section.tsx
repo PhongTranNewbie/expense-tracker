@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { mockExpenses } from "@/components/expenses/mock-expenses";
+import {
+  EXPENSES_STORAGE_KEY,
+  readExpenseRowsFromLocalStorage,
+} from "@/lib/expenses-storage";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -11,20 +15,6 @@ const PAYMENT_OPTIONS = [
   "PayPal",
   "Cash",
 ] as const;
-
-const EXPENSES_STORAGE_KEY = "expense-tracker:expenses:v1";
-
-function isExpenseRow(value: unknown): value is ExpenseRow {
-  if (typeof value !== "object" || value === null) return false;
-  const o = value as Record<string, unknown>;
-  return (
-    typeof o.id === "string" &&
-    typeof o.category === "string" &&
-    typeof o.amount === "string" &&
-    typeof o.date === "string" &&
-    typeof o.paymentMethod === "string"
-  );
-}
 
 type FormErrors = Partial<
   Record<"category" | "amount" | "date" | "paymentMethod", string>
@@ -126,27 +116,9 @@ export function DashboardExpensesSection() {
   }, []);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(EXPENSES_STORAGE_KEY);
-      if (raw === null || raw === "") {
-        setStorageReady(true);
-        return;
-      }
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        setStorageReady(true);
-        return;
-      }
-      if (parsed.length === 0) {
-        setExpenses([]);
-        setStorageReady(true);
-        return;
-      }
-      if (parsed.every(isExpenseRow)) {
-        setExpenses(parsed);
-      }
-    } catch {
-      /* keep initial mock */
+    const read = readExpenseRowsFromLocalStorage();
+    if (read.kind === "rows") {
+      setExpenses(read.rows);
     }
     setStorageReady(true);
   }, []);

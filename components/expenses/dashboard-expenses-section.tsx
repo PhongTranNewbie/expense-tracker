@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { mockExpenses } from "@/components/expenses/mock-expenses";
 import {
@@ -63,6 +63,13 @@ function validate(
   return errors;
 }
 
+type SortOption = "newest" | "oldest" | "amount";
+
+function parseAmountForSort(display: string): number {
+  const n = Number.parseFloat(display.replace(/[$\s]/g, "").replace(/,/g, ""));
+  return Number.isNaN(n) ? 0 : n;
+}
+
 export function DashboardExpensesSection() {
   const [expenses, setExpenses] = useState<ExpenseRow[]>(() => [
     ...mockExpenses,
@@ -78,6 +85,10 @@ export function DashboardExpensesSection() {
     PAYMENT_OPTIONS[0],
   );
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const isEdit = editingId !== null;
 
@@ -171,22 +182,148 @@ export function DashboardExpensesSection() {
 
   const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
 
+  const categoryOptions = useMemo(() => {
+    const names = new Set(expenses.map((e) => e.category));
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [expenses]);
+
+  const displayedExpenses = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = expenses.filter((row) => {
+      if (categoryFilter && row.category !== categoryFilter) return false;
+      if (q) {
+        const cat = row.category.toLowerCase();
+        const pm = row.paymentMethod.toLowerCase();
+        if (!cat.includes(q) && !pm.includes(q)) return false;
+      }
+      return true;
+    });
+    const next = [...filtered];
+    if (sortBy === "newest") {
+      next.sort(
+        (a, b) =>
+          b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+      );
+    } else if (sortBy === "oldest") {
+      next.sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.id.localeCompare(b.id),
+      );
+    } else {
+      next.sort(
+        (a, b) =>
+          parseAmountForSort(b.amount) - parseAmountForSort(a.amount) ||
+          b.date.localeCompare(a.date),
+      );
+    }
+    return next;
+  }, [expenses, searchQuery, categoryFilter, sortBy]);
+
+  useEffect(() => {
+    if (
+      categoryFilter &&
+      !categoryOptions.includes(categoryFilter)
+    ) {
+      setCategoryFilter("");
+    }
+  }, [categoryFilter, categoryOptions]);
+
   return (
     <>
-      <ExpensesTable
-        expenses={expenses}
-        onEdit={openEditModal}
-        onDelete={handleDelete}
-        actions={
-          <button
-            type="button"
-            onClick={openAddModal}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Add expense
-          </button>
-        }
-      />
+      <div className="space-y-3">
+        <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/40 dark:ring-white/10 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+            <div className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="expense-search"
+                  className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+                >
+                  Search
+                </label>
+                <input
+                  id="expense-search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Category or payment method"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-500"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="expense-category-filter"
+                  className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+                >
+                  Category
+                </label>
+                <select
+                  id="expense-category-filter"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-500"
+                >
+                  <option value="">All categories</option>
+                  {categoryOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="w-full shrink-0 sm:max-w-xs lg:w-56">
+              <label
+                htmlFor="expense-sort"
+                className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+              >
+                Sort
+              </label>
+              <select
+                id="expense-sort"
+                value={sortBy}
+                onChange={(e) =>
+                  setSortBy(e.target.value as SortOption)
+                }
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-500"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="amount">Highest amount</option>
+              </select>
+            </div>
+          </div>
+          {expenses.length > 0 ? (
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              Showing{" "}
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                {displayedExpenses.length}
+              </span>{" "}
+              of {expenses.length}
+            </p>
+          ) : null}
+        </div>
+
+        <ExpensesTable
+          expenses={displayedExpenses}
+          onEdit={openEditModal}
+          onDelete={handleDelete}
+          actions={
+            <button
+              type="button"
+              onClick={openAddModal}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              Add expense
+            </button>
+          }
+        />
+        {expenses.length > 0 && displayedExpenses.length === 0 ? (
+          <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+            No expenses match your search or filters.
+          </p>
+        ) : null}
+      </div>
 
       {open ? (
         <div

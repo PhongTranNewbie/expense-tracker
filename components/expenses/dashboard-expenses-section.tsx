@@ -7,6 +7,7 @@ import {
   EXPENSES_STORAGE_KEY,
   readExpenseRowsFromLocalStorage,
 } from "@/lib/expenses-storage";
+import { toast } from "sonner";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -124,6 +125,7 @@ export function DashboardExpensesSection() {
   const handleDelete = useCallback((row: ExpenseRow) => {
     if (!window.confirm("Remove this expense?")) return;
     setExpenses((prev) => prev.filter((r) => r.id !== row.id));
+    toast.success("Expense deleted");
   }, []);
 
   useEffect(() => {
@@ -170,12 +172,14 @@ export function DashboardExpensesSection() {
       setExpenses((prev) =>
         prev.map((r) => (r.id === editingId ? { ...r, ...base } : r)),
       );
+      toast.success("Expense updated");
     } else {
       const row: ExpenseRow = {
         id: crypto.randomUUID(),
         ...base,
       };
       setExpenses((prev) => [row, ...prev]);
+      toast.success("Expense added");
     }
     closeModal();
   }

@@ -1,25 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ExpenseRow } from "@/components/expenses/expenses-table";
 import { mockExpenses } from "@/components/expenses/mock-expenses";
 import {
   EXPENSES_STORAGE_KEY,
   readExpenseRowsFromLocalStorage,
 } from "@/lib/expenses-storage";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const MONTH_COUNT = 6;
 
-const CATEGORY_BAR_COLORS = [
-  "bg-violet-500",
-  "bg-sky-500",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-rose-500",
-  "bg-indigo-500",
-  "bg-teal-500",
-  "bg-orange-500",
+const CHART_COLORS = [
+  "#8b5cf6",
+  "#0ea5e9",
+  "#10b981",
+  "#f59e0b",
+  "#f43f5e",
+  "#6366f1",
+  "#14b8a6",
+  "#f97316",
 ];
+
+const AXIS_TICK = { fontSize: 12, fill: "#71717a" };
+const GRID_STROKE = "#e4e4e7";
+const TREND_COLOR = "#8b5cf6";
 
 function parseExpenseAmount(display: string): number {
   const n = Number.parseFloat(display.replace(/[$\s]/g, "").replace(/,/g, ""));
@@ -49,6 +66,104 @@ function resolveExpenses(
   read: ReturnType<typeof readExpenseRowsFromLocalStorage>,
 ): ExpenseRow[] {
   return read.kind === "rows" ? read.rows : [...mockExpenses];
+}
+
+function formatMoney(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function formatAxisMoney(n: number) {
+  if (n >= 1000) return `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return `$${n}`;
+}
+
+type TooltipPayload = { value?: number; name?: string };
+
+function MoneyTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayload[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const value = payload[0]?.value ?? 0;
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+      {label ? (
+        <p className="mb-0.5 text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
+      ) : null}
+      <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+        {formatMoney(value)}
+      </p>
+    </div>
+  );
+}
+
+function CategoryTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: TooltipPayload[];
+}) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0];
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+      <p className="font-medium text-zinc-900 dark:text-zinc-50">{item?.name}</p>
+      <p className="tabular-nums text-zinc-600 dark:text-zinc-300">
+        {formatMoney(item?.value ?? 0)}
+      </p>
+    </div>
+  );
+}
+
+function ChartCard({
+  title,
+  description,
+  children,
+  className = "",
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={
+        "rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 sm:p-6 " +
+        className
+      }
+    >
+      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-5 min-h-[260px] w-full">{children}</div>
+    </section>
+  );
+}
+
+function EmptyChart({ message }: { message: string }) {
+  return (
+    <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 dark:border-zinc-700 dark:bg-zinc-950/30">
+      <p className="px-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        {message}
+      </p>
+    </div>
+  );
 }
 
 export function ReportsView() {
@@ -94,7 +209,7 @@ export function ReportsView() {
     }));
   }, [expenses, monthKeys, monthKeySet]);
 
-  const categoryBreakdown = useMemo(() => {
+  const categoryPieData = useMemo(() => {
     const sums = new Map<string, number>();
     for (const row of expenses) {
       const ym = row.date.slice(0, 7);
@@ -102,119 +217,133 @@ export function ReportsView() {
       const amt = parseExpenseAmount(row.amount);
       sums.set(row.category, (sums.get(row.category) ?? 0) + amt);
     }
-    const entries = [...sums.entries()].sort((a, b) => b[1] - a[1]);
-    const max = entries.reduce((m, [, v]) => Math.max(m, v), 0);
-    return { entries, max };
+    return [...sums.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [expenses, monthKeySet]);
 
-  const monthlyMax = useMemo(
-    () => monthlySeries.reduce((m, x) => Math.max(m, x.total), 0),
-    [monthlySeries],
+  const hasMonthlyData = monthlySeries.some((m) => m.total > 0);
+  const hasCategoryData = categoryPieData.length > 0;
+
+  const totalInWindow = useMemo(
+    () => categoryPieData.reduce((s, c) => s + c.value, 0),
+    [categoryPieData],
   );
 
-  const formatMoney = (n: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(n);
-
-  const hasAnyInWindow =
-    monthlySeries.some((m) => m.total > 0) ||
-    categoryBreakdown.entries.length > 0;
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Based on saved expenses from the last {MONTH_COUNT} months (localStorage
-        or mock data when nothing is stored yet).
+        Charts use your saved expenses from the last {MONTH_COUNT} months
+        (localStorage, or sample data when nothing is stored yet).
       </p>
 
-      <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 sm:p-6">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Monthly expenses
-        </h2>
-        {!hasAnyInWindow ? (
-          <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-            No expenses in this window yet.
-          </p>
-        ) : (
-          <div className="mt-6">
-            <div className="flex h-48 min-h-[12rem] items-end gap-2 sm:gap-3">
-              {monthlySeries.map((m) => {
-                const h =
-                  monthlyMax <= 0
-                    ? 0
-                    : Math.max(8, (m.total / monthlyMax) * 100);
-                return (
-                  <div
-                    key={m.key}
-                    className="flex min-w-0 flex-1 flex-col items-center gap-2"
-                  >
-                    <div className="flex w-full flex-1 items-end justify-center rounded-xl bg-zinc-100 px-1 pb-0 pt-2 dark:bg-zinc-800/60">
-                      <div
-                        className="w-full max-w-14 rounded-t-lg bg-violet-500 transition-[height] dark:bg-violet-400"
-                        style={{ height: `${h}%` }}
-                        title={`${m.label}: ${formatMoney(m.total)}`}
-                      />
-                    </div>
-                    <span className="w-full truncate text-center text-[11px] font-medium text-zinc-500 dark:text-zinc-400 sm:text-xs">
-                      {m.label}
-                    </span>
-                    <span className="w-full truncate text-center text-[10px] tabular-nums text-zinc-600 dark:text-zinc-300 sm:text-xs">
-                      {formatMoney(m.total)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </section>
+      <div className="grid gap-6 xl:grid-cols-5">
+        <ChartCard
+          className="xl:col-span-3"
+          title="Monthly expense trend"
+          description="Total spending per month over the selected period."
+        >
+          {!hasMonthlyData ? (
+            <EmptyChart message="No expenses in this period yet." />
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart
+                data={monthlySeries}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={TREND_COLOR} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={TREND_COLOR} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={GRID_STROKE}
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={AXIS_TICK}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={8}
+                />
+                <YAxis
+                  tick={AXIS_TICK}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={formatAxisMoney}
+                  width={48}
+                />
+                <Tooltip
+                  content={<MoneyTooltip />}
+                  cursor={{ stroke: TREND_COLOR, strokeOpacity: 0.2 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke={TREND_COLOR}
+                  strokeWidth={2}
+                  fill="url(#trendFill)"
+                  activeDot={{ r: 5, fill: TREND_COLOR, strokeWidth: 0 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
 
-      <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 sm:p-6">
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Category breakdown
-        </h2>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Share of spending in the same {MONTH_COUNT}-month window.
-        </p>
-        {categoryBreakdown.entries.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-            No categories to show for this period.
-          </p>
-        ) : (
-          <ul className="mt-5 space-y-4">
-            {categoryBreakdown.entries.map(([name, total], i) => {
-              const pct =
-                categoryBreakdown.max <= 0
-                  ? 0
-                  : Math.round((total / categoryBreakdown.max) * 100);
-              const color =
-                CATEGORY_BAR_COLORS[i % CATEGORY_BAR_COLORS.length] ??
-                "bg-zinc-400";
-              return (
-                <li key={name}>
-                  <div className="flex items-baseline justify-between gap-3 text-sm">
-                    <span className="truncate font-medium text-zinc-800 dark:text-zinc-100">
-                      {name}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-zinc-600 dark:text-zinc-300">
-                      {formatMoney(total)}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div
-                      className={`h-full rounded-full ${color}`}
-                      style={{ width: `${pct}%` }}
+        <ChartCard
+          className="xl:col-span-2"
+          title="Spending by category"
+          description={
+            hasCategoryData
+              ? `${formatMoney(totalInWindow)} total in this window.`
+              : "Share of spending in the same period."
+          }
+        >
+          {!hasCategoryData ? (
+            <EmptyChart message="No category data for this period." />
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={categoryPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="45%"
+                  innerRadius="52%"
+                  outerRadius="78%"
+                  paddingAngle={2}
+                  stroke="transparent"
+                >
+                  {categoryPieData.map((entry, i) => (
+                    <Cell
+                      key={entry.name}
+                      fill={CHART_COLORS[i % CHART_COLORS.length]}
                     />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                  ))}
+                </Pie>
+                <Tooltip content={<CategoryTooltip />} />
+                <Legend
+                  layout="horizontal"
+                  verticalAlign="bottom"
+                  align="center"
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+                  formatter={(value: string) => (
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      {value}
+                    </span>
+                  )}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+      </div>
     </div>
   );
 }

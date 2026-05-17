@@ -1,5 +1,6 @@
 import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
 import { SummaryCard } from "@/components/ui/summary-card";
+import { getExpenses } from "@/lib/expenses";
 
 const summaryMock = [
   {
@@ -28,7 +29,19 @@ const summaryMock = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const dbExpenses = await getExpenses();
+  const initialExpenses = dbExpenses.map((e) => ({
+    id: e.id,
+    category: e.category,
+    amount: new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(e.amount),
+    date: e.date.toISOString().split("T")[0],
+    paymentMethod: e.paymentMethod,
+  }));
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -45,7 +58,7 @@ export default function Home() {
           />
         ))}
       </div>
-      <DashboardExpensesSection />
+      <DashboardExpensesSection key={JSON.stringify(initialExpenses)} initialExpenses={initialExpenses} />
     </div>
   );
 }

@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
-import { mockExpenses } from "@/components/expenses/mock-expenses";
-import {
-  EXPENSES_STORAGE_KEY,
-  readExpenseRowsFromLocalStorage,
-} from "@/lib/expenses-storage";
 import { toast } from "sonner";
+import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -71,11 +67,10 @@ function parseAmountForSort(display: string): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-export function DashboardExpensesSection() {
-  const [expenses, setExpenses] = useState<ExpenseRow[]>(() => [
-    ...mockExpenses,
-  ]);
-  const [storageReady, setStorageReady] = useState(false);
+export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?: ExpenseRow[] } = {}) {
+  const [expenses, setExpenses] = useState<ExpenseRow[]>(() =>
+    initialExpenses ? [...initialExpenses] : []
+  );
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -122,28 +117,16 @@ export function DashboardExpensesSection() {
     setOpen(true);
   }, []);
 
-  const handleDelete = useCallback((row: ExpenseRow) => {
+  const handleDelete = useCallback(async (row: ExpenseRow) => {
     if (!window.confirm("Remove this expense?")) return;
-    setExpenses((prev) => prev.filter((r) => r.id !== row.id));
-    toast.success("Expense deleted");
-  }, []);
-
-  useEffect(() => {
-    const read = readExpenseRowsFromLocalStorage();
-    if (read.kind === "rows") {
-      setExpenses(read.rows);
+    const result = await deleteExpense(row.id);
+    if (result.success) {
+      setExpenses((prev) => prev.filter((r) => r.id !== row.id));
+      toast.success("Expense deleted");
+    } else {
+      toast.error(result.error || "Failed to delete expense");
     }
-    setStorageReady(true);
   }, []);
-
-  useEffect(() => {
-    if (!storageReady) return;
-    try {
-      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
-    } catch {
-      /* ignore quota / private mode */
-    }
-  }, [expenses, storageReady]);
 
   useEffect(() => {
     if (!open) return;
@@ -154,34 +137,48 @@ export function DashboardExpensesSection() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, closeModal]);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const next = validate(category, amount, date, paymentMethod);
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
     const n = Number.parseFloat(amount.trim().replace(/,/g, ""));
-    const base = {
+    const formData = {
       category: category.trim(),
-      amount: formatUsd(n),
+      amount: n,
       date,
       paymentMethod,
     };
 
     if (editingId) {
-      setExpenses((prev) =>
-        prev.map((r) => (r.id === editingId ? { ...r, ...base } : r)),
-      );
-      toast.success("Expense updated");
+      const result = await updateExpense(editingId, formData);
+      if (result.success) {
+        setExpenses((prev) =>
+          prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatUsd(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
+        );
+        toast.success("Expense updated");
+        closeModal();
+      } else {
+        toast.error(result.error || "Failed to update expense");
+      }
     } else {
-      const row: ExpenseRow = {
-        id: crypto.randomUUID(),
-        ...base,
-      };
-      setExpenses((prev) => [row, ...prev]);
-      toast.success("Expense added");
+      const result = await createExpense(formData);
+      if (result.success) {
+        const row: ExpenseRow = {
+          id: crypto.randomUUID(),
+          category: formData.category,
+          amount: formatUsd(n),
+          date: formData.date,
+          paymentMethod: formData.paymentMethod,
+        };
+        setExpenses((prev) => [row, ...prev]);
+        toast.success("Expense added");
+        closeModal();
+      } else {
+        toast.error(result.error || "Failed to create expense");
+      }
     }
-    closeModal();
   }
 
   const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
@@ -223,14 +220,6 @@ export function DashboardExpensesSection() {
     return next;
   }, [expenses, searchQuery, categoryFilter, sortBy]);
 
-  useEffect(() => {
-    if (
-      categoryFilter &&
-      !categoryOptions.includes(categoryFilter)
-    ) {
-      setCategoryFilter("");
-    }
-  }, [categoryFilter, categoryOptions]);
 
   return (
     <>

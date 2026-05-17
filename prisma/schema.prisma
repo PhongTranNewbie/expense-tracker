@@ -1,0 +1,19 @@
+generator client {
+  provider        = "prisma-client-js"
+  engineType      = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  category      String
+  amount        Float
+  date          DateTime
+  paymentMethod String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

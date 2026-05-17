@@ -1,12 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { ExpenseRow } from "@/components/expenses/expenses-table";
-import { mockExpenses } from "@/components/expenses/mock-expenses";
-import {
-  EXPENSES_STORAGE_KEY,
-  readExpenseRowsFromLocalStorage,
-} from "@/lib/expenses-storage";
 import {
   Area,
   AreaChart,
@@ -60,12 +55,6 @@ function shortMonthLabel(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
   const d = new Date(y, (m ?? 1) - 1, 1);
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-}
-
-function resolveExpenses(
-  read: ReturnType<typeof readExpenseRowsFromLocalStorage>,
-): ExpenseRow[] {
-  return read.kind === "rows" ? read.rows : [...mockExpenses];
 }
 
 function formatMoney(n: number) {
@@ -166,31 +155,7 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
-export function ReportsView() {
-  const [expenses, setExpenses] = useState<ExpenseRow[]>(() => [
-    ...mockExpenses,
-  ]);
-
-  const reload = useCallback(() => {
-    setExpenses(resolveExpenses(readExpenseRowsFromLocalStorage()));
-  }, []);
-
-  useEffect(() => {
-    reload();
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === EXPENSES_STORAGE_KEY || e.key === null) reload();
-    };
-    const onVisible = () => {
-      if (document.visibilityState === "visible") reload();
-    };
-    window.addEventListener("storage", onStorage);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [reload]);
-
+export function ReportsView({ expenses }: { expenses: ExpenseRow[] }) {
   const monthKeys = useMemo(() => getTrailingMonthKeys(MONTH_COUNT), []);
   const monthKeySet = useMemo(() => new Set(monthKeys), [monthKeys]);
 
@@ -233,8 +198,7 @@ export function ReportsView() {
   return (
     <div className="space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Charts use your saved expenses from the last {MONTH_COUNT} months
-        (localStorage, or sample data when nothing is stored yet).
+        Charts show your spending from the last {MONTH_COUNT} months.
       </p>
 
       <div className="grid gap-6 xl:grid-cols-5">

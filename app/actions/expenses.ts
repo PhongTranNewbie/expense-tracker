@@ -20,6 +20,7 @@ export async function createExpense(formData: {
     });
 
     revalidatePath("/");
+    revalidatePath("/reports");
     return { success: true };
   } catch (error) {
     console.error("Error creating expense:", error);
@@ -48,6 +49,7 @@ export async function updateExpense(
     });
 
     revalidatePath("/");
+    revalidatePath("/reports");
     return { success: true };
   } catch (error) {
     console.error("Error updating expense:", error);
@@ -62,6 +64,7 @@ export async function deleteExpense(id: string) {
     });
 
     revalidatePath("/");
+    revalidatePath("/reports");
     return { success: true };
   } catch (error) {
     console.error("Error deleting expense:", error);

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import type { ExpenseRow } from "@/components/expenses/expenses-table";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -33,9 +34,11 @@ const AXIS_TICK = { fontSize: 12, fill: "#71717a" };
 const GRID_STROKE = "#e4e4e7";
 const TREND_COLOR = "#8b5cf6";
 
-function parseExpenseAmount(display: string): number {
-  const n = Number.parseFloat(display.replace(/[$\s]/g, "").replace(/,/g, ""));
-  return Number.isNaN(n) ? 0 : n;
+interface ReportExpense {
+  id: string;
+  category: string;
+  amount: number;
+  date: Date;
 }
 
 function monthKeyFromDate(d: Date): string {
@@ -155,17 +158,48 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
-export function ReportsView({ expenses }: { expenses: ExpenseRow[] }) {
-  const monthKeys = useMemo(() => getTrailingMonthKeys(MONTH_COUNT), []);
+export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
+  const { currentMonthKey, lastMonthKey, monthKeys } = useMemo(() => {
+    const now = new Date();
+    const current = monthKeyFromDate(now);
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const last = monthKeyFromDate(lastDate);
+    const trailing = getTrailingMonthKeys(MONTH_COUNT, now);
+    return { currentMonthKey: current, lastMonthKey: last, monthKeys: trailing };
+  }, []);
+
   const monthKeySet = useMemo(() => new Set(monthKeys), [monthKeys]);
+
+  const stats = useMemo(() => {
+    let currentMonthTotal = 0;
+    let lastMonthTotal = 0;
+
+    for (const row of expenses) {
+      const ym = monthKeyFromDate(row.date);
+      if (ym === currentMonthKey) currentMonthTotal += row.amount;
+      if (ym === lastMonthKey) lastMonthTotal += row.amount;
+    }
+
+    const diff = currentMonthTotal - lastMonthTotal;
+    const trend =
+      lastMonthTotal === 0
+        ? 0
+        : Math.round((diff / lastMonthTotal) * 100);
+
+    return {
+      currentMonthTotal,
+      lastMonthTotal,
+      trend,
+    };
+  }, [expenses, currentMonthKey, lastMonthKey]);
 
   const monthlySeries = useMemo(() => {
     const sums = new Map<string, number>();
     for (const key of monthKeys) sums.set(key, 0);
     for (const row of expenses) {
-      const ym = row.date.slice(0, 7);
+      const ym = monthKeyFromDate(row.date);
       if (!monthKeySet.has(ym)) continue;
-      sums.set(ym, (sums.get(ym) ?? 0) + parseExpenseAmount(row.amount));
+      sums.set(ym, (sums.get(ym) ?? 0) + row.amount);
     }
     return monthKeys.map((key) => ({
       key,
@@ -177,10 +211,9 @@ export function ReportsView({ expenses }: { expenses: ExpenseRow[] }) {
   const categoryPieData = useMemo(() => {
     const sums = new Map<string, number>();
     for (const row of expenses) {
-      const ym = row.date.slice(0, 7);
+      const ym = monthKeyFromDate(row.date);
       if (!monthKeySet.has(ym)) continue;
-      const amt = parseExpenseAmount(row.amount);
-      sums.set(row.category, (sums.get(row.category) ?? 0) + amt);
+      sums.set(row.category, (sums.get(row.category) ?? 0) + row.amount);
     }
     return [...sums.entries()]
       .map(([name, value]) => ({ name, value }))
@@ -190,84 +223,51 @@ export function ReportsView({ expenses }: { expenses: ExpenseRow[] }) {
   const hasMonthlyData = monthlySeries.some((m) => m.total > 0);
   const hasCategoryData = categoryPieData.length > 0;
 
-  const totalInWindow = useMemo(
-    () => categoryPieData.reduce((s, c) => s + c.value, 0),
-    [categoryPieData],
-  );
-
   return (
     <div className="space-y-6">
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Charts show your spending from the last {MONTH_COUNT} months.
-      </p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month</p>
+          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.currentMonthTotal)}</p>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month</p>
+          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.lastMonthTotal)}</p>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Monthly Trend</p>
+          <p className={`mt-2 text-3xl font-bold ${stats.trend > 0 ? 'text-rose-500' : stats.trend < 0 ? 'text-emerald-500' : 'text-zinc-900 dark:text-zinc-50'}`}>
+            {stats.trend > 0 ? '+' : ''}{stats.trend}%
+          </p>
+        </div>
+      </div>
 
-      <div className="grid gap-6 xl:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard
-          className="xl:col-span-3"
-          title="Monthly expense trend"
-          description="Total spending per month over the selected period."
+          title="Monthly Spending"
+          description="Total expenses per month."
         >
           {!hasMonthlyData ? (
-            <EmptyChart message="No expenses in this period yet." />
+            <EmptyChart message="No expenses found." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart
-                data={monthlySeries}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={TREND_COLOR} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={TREND_COLOR} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={GRID_STROKE}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={AXIS_TICK}
-                  axisLine={false}
-                  tickLine={false}
-                  dy={8}
-                />
-                <YAxis
-                  tick={AXIS_TICK}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={formatAxisMoney}
-                  width={48}
-                />
-                <Tooltip
-                  content={<MoneyTooltip />}
-                  cursor={{ stroke: TREND_COLOR, strokeOpacity: 0.2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  stroke={TREND_COLOR}
-                  strokeWidth={2}
-                  fill="url(#trendFill)"
-                  activeDot={{ r: 5, fill: TREND_COLOR, strokeWidth: 0 }}
-                />
-              </AreaChart>
+              <BarChart data={monthlySeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
+                <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={formatAxisMoney} />
+                <Tooltip content={<MoneyTooltip />} cursor={{ fill: '#f4f4f5', opacity: 0.4 }} />
+                <Bar dataKey="total" fill={TREND_COLOR} radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
 
         <ChartCard
-          className="xl:col-span-2"
-          title="Spending by category"
-          description={
-            hasCategoryData
-              ? `${formatMoney(totalInWindow)} total in this window.`
-              : "Share of spending in the same period."
-          }
+          title="Category Breakdown"
+          description="Spending distribution by category."
         >
           {!hasCategoryData ? (
-            <EmptyChart message="No category data for this period." />
+            <EmptyChart message="No category data." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -276,33 +276,17 @@ export function ReportsView({ expenses }: { expenses: ExpenseRow[] }) {
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
-                  cy="45%"
-                  innerRadius="52%"
-                  outerRadius="78%"
-                  paddingAngle={2}
-                  stroke="transparent"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
                 >
-                  {categoryPieData.map((entry, i) => (
-                    <Cell
-                      key={entry.name}
-                      fill={CHART_COLORS[i % CHART_COLORS.length]}
-                    />
+                  {categoryPieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<CategoryTooltip />} />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                  formatter={(value: string) => (
-                    <span className="text-zinc-600 dark:text-zinc-400">
-                      {value}
-                    </span>
-                  )}
-                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
           )}

@@ -25,3 +25,17 @@ export async function getExpenseById(id: string) {
     throw new Error("Failed to fetch expense");
   }
 }
+
+export async function getReportData() {
+  try {
+    const expenses = await prisma.expense.findMany({
+      orderBy: {
+        date: "asc",
+      },
+    });
+    return expenses;
+  } catch (error) {
+    console.error("Error fetching report data:", error);
+    throw new Error("Failed to fetch report data");
+  }
+}

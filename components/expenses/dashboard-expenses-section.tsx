@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
+import { getCategories } from "@/app/actions/categories";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -71,6 +72,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   const [expenses, setExpenses] = useState<ExpenseRow[]>(() =>
     initialExpenses ? [...initialExpenses] : []
   );
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -88,14 +90,29 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
 
   const isEdit = editingId !== null;
 
+  // Load categories when component mounts
+  useEffect(() => {
+    async function loadCategories() {
+      const result = await getCategories();
+      if (result.success && result.data) {
+        setCategories(result.data);
+        // Set first category as default if available
+        if (result.data.length > 0 && !category) {
+          setCategory(result.data[0].name);
+        }
+      }
+    }
+    loadCategories();
+  }, []);
+
   const resetForm = useCallback(() => {
-    setCategory("");
+    setCategory(categories.length > 0 ? categories[0].name : "");
     setAmount("");
     setDate("");
     setPaymentMethod(PAYMENT_OPTIONS[0]);
     setErrors({});
     setEditingId(null);
-  }, []);
+  }, [categories]);
 
   const closeModal = useCallback(() => {
     setOpen(false);
@@ -144,8 +161,16 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
     if (Object.keys(next).length > 0) return;
 
     const n = Number.parseFloat(amount.trim().replace(/,/g, ""));
+    const selectedCategory = categories.find(cat => cat.name === category);
+    
+    if (!selectedCategory) {
+      toast.error("Please select a valid category");
+      return;
+    }
+    
     const formData = {
       category: category.trim(),
+      categoryId: selectedCategory.id,
       amount: n,
       date,
       paymentMethod,
@@ -377,19 +402,26 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                   >
                     Category
                   </label>
-                  <input
+                  <select
                     id="expense-category"
-                    type="text"
-                    autoComplete="off"
                     value={category}
                     onChange={(e) => {
                       setCategory(e.target.value);
                       if (errors.category)
                         setErrors((o) => ({ ...o, category: undefined }));
                     }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
-                    placeholder="e.g. Groceries"
-                  />
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
+                  >
+                    {categories.length === 0 ? (
+                      <option value="">No categories available</option>
+                    ) : (
+                      categories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
                   {errors.category ? (
                     <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
                       {errors.category}

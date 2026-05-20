@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
 export async function createExpense(formData: {
-  category: string;
+  category: string;     // Tên danh mục (ví dụ: "Ăn uống") để phục vụ code hiển thị cũ
+  categoryId: string;   // ID danh mục từ bảng Category mới để tạo liên kết chuẩn
   amount: number;
   date: string;
   paymentMethod: string;
@@ -12,7 +13,7 @@ export async function createExpense(formData: {
   try {
     await prisma.expense.create({
       data: {
-        category: formData.category,
+        categoryId: formData.categoryId, // Lưu ID liên kết xuống DB
         amount: formData.amount,
         date: new Date(formData.date),
         paymentMethod: formData.paymentMethod,
@@ -32,6 +33,7 @@ export async function updateExpense(
   id: string,
   formData: {
     category: string;
+    categoryId: string;
     amount: number;
     date: string;
     paymentMethod: string;
@@ -41,7 +43,7 @@ export async function updateExpense(
     await prisma.expense.update({
       where: { id },
       data: {
-        category: formData.category,
+        categoryId: formData.categoryId, // Cập nhật lại ID liên kết mới
         amount: formData.amount,
         date: new Date(formData.date),
         paymentMethod: formData.paymentMethod,

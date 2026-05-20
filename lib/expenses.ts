@@ -3,6 +3,9 @@ import { prisma } from "./db";
 export async function getExpenses() {
   try {
     const expenses = await prisma.expense.findMany({
+      include: {
+        category: true,
+      },
       orderBy: {
         date: "desc",
       },
@@ -18,6 +21,9 @@ export async function getExpenseById(id: string) {
   try {
     const expense = await prisma.expense.findUnique({
       where: { id },
+      include: {
+        category: true,
+      },
     });
     return expense;
   } catch (error) {
@@ -29,6 +35,9 @@ export async function getExpenseById(id: string) {
 export async function getReportData() {
   try {
     const expenses = await prisma.expense.findMany({
+      include: {
+        category: true,
+      },
       orderBy: {
         date: "asc",
       },

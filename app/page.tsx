@@ -33,7 +33,7 @@ export default async function Home() {
   const dbExpenses = await getExpenses();
   const initialExpenses = dbExpenses.map((e) => ({
     id: e.id,
-    category: e.category,
+    category: e.category?.name || e.category, // Handle both object and string cases
     amount: new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -45,7 +45,7 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Welcome back. Here&apos;s a quick snapshot of your finances.
+        Welcome back. Here's a quick snapshot of your finances.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryMock.map((item) => (

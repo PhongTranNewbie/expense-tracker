@@ -3,59 +3,92 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const categoryNames = [
+  "Groceries",
+  "Transport",
+  "Utilities",
+  "Dining",
+  "Subscriptions",
+  "Entertainment",
+  "Health",
+  "Shopping",
+];
+
+const paymentMethods = [
+  "Credit Card",
+  "Debit Card",
+  "Bank Transfer",
+  "PayPal",
+  "Cash",
+];
+
 async function main() {
-  console.log("Seeding database...");
+  console.log("🌱 Starting seed...");
 
-  // Clear existing data
+  // Clear old data
   await prisma.expense.deleteMany();
+  await prisma.category.deleteMany();
 
-  const categories = [
-    "Groceries",
-    "Transport",
-    "Utilities",
-    "Dining",
-    "Subscriptions",
-    "Entertainment",
-    "Health",
-    "Shopping",
-  ];
-  const paymentMethods = ["Credit card", "Debit card", "Bank transfer", "PayPal", "Cash"];
+  // Create categories
+  const categories = await Promise.all(
+    categoryNames.map((name) =>
+      prisma.category.create({
+        data: { name },
+      })
+    )
+  );
 
   const expenses = [];
   const now = new Date();
 
-  // Create data for the last 4 months
-  for (let i = 0; i < 4; i++) {
-    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  // Generate expenses for last 4 months
+  for (let monthOffset = 0; monthOffset < 4; monthOffset++) {
+    const currentMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() - monthOffset,
+      1
+    );
 
-    // Generate 10-15 expenses per month
-    const count = Math.floor(Math.random() * 6) + 10;
+    const expenseCount = Math.floor(Math.random() * 6) + 10;
 
-    for (let j = 0; j < count; j++) {
-      const day = Math.floor(Math.random() * 28) + 1;
-      const date = new Date(month.getFullYear(), month.getMonth(), day);
+    for (let i = 0; i < expenseCount; i++) {
+      const randomCategory =
+        categories[Math.floor(Math.random() * categories.length)];
+
+      const randomPaymentMethod =
+        paymentMethods[
+          Math.floor(Math.random() * paymentMethods.length)
+        ];
+
+      const randomDay = Math.floor(Math.random() * 28) + 1;
+
+      const expenseDate = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        randomDay
+      );
 
       expenses.push({
-        category: categories[Math.floor(Math.random() * categories.length)],
-        amount: parseFloat((Math.random() * 150 + 5).toFixed(2)),
-        date: date,
-        paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+        amount: Number((Math.random() * 150 + 5).toFixed(2)),
+        date: expenseDate,
+        paymentMethod: randomPaymentMethod,
+        categoryId: randomCategory.id,
       });
     }
   }
 
-  for (const expense of expenses) {
-    await prisma.expense.create({
-      data: expense,
-    });
-  }
+  await prisma.expense.createMany({
+    data: expenses,
+  });
 
-  console.log(`Seeded ${expenses.length} expenses.`);
+  console.log(`✅ Created ${categories.length} categories`);
+  console.log(`✅ Created ${expenses.length} expenses`);
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error("❌ Seed failed");
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {

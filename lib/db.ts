@@ -1,9 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+// 1. Đổi trực tiếp từ gốc để các file mới import { prisma } chạy mượt mà
+export const prisma = new PrismaClient() 
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient();
+// 2. Tạo một "bí danh" db trỏ vào prisma để code cũ không bị sập
+export const db = prisma 
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export { Prisma } from '@prisma/client'

@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  engineType      = "binary"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,10 +9,21 @@ datasource db {
 
 model Expense {
   id            String   @id @default(cuid())
-  category      String
   amount        Float
   date          DateTime
   paymentMethod String
+
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  expenses Expense[]
+
+  @@map("categories")
 }

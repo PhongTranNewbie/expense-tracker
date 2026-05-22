@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useState, type ReactNode } from "react";
 
 export type ExpenseRow = {
   id: string;
@@ -32,7 +34,25 @@ export function ExpensesTable({
   onEdit,
   onDelete,
 }: ExpensesTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Reset to page 1 when expenses change (search/filter)
+  const [prevExpenses, setPrevExpenses] = useState(expenses);
+  if (expenses !== prevExpenses) {
+    setPrevExpenses(expenses);
+    setCurrentPage(1);
+  }
+
+  const totalPages = Math.ceil(expenses.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedExpenses = expenses.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
   const showRowActions = Boolean(onEdit || onDelete);
+
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -45,7 +65,7 @@ export function ExpensesTable({
       </div>
 
       <ul className="space-y-3 sm:hidden">
-        {expenses.map((row) => (
+        {paginatedExpenses.map((row) => (
           <li
             key={row.id}
             className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10"
@@ -117,7 +137,7 @@ export function ExpensesTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {expenses.map((row) => (
+              {paginatedExpenses.map((row) => (
                 <tr
                   key={row.id}
                   className="transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
@@ -160,6 +180,34 @@ export function ExpensesTable({
           </table>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Showing {startIndex + 1} to{" "}
+            {Math.min(startIndex + ITEMS_PER_PAGE, expenses.length)} of{" "}
+            {expenses.length} expenses
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:disabled:hover:bg-zinc-950`}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:disabled:hover:bg-zinc-950`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

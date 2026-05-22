@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { DashboardLayout } from "@/components/shell/dashboard-layout";
 import { AppToaster } from "@/components/ui/app-toaster";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,10 +29,27 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-sans">
-        <DashboardLayout>{children}</DashboardLayout>
-        <AppToaster />
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans">
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('expense-tracker-theme');
+                  var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches) || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  document.documentElement.classList[isDark ? 'add' : 'remove']('dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+        <ThemeProvider defaultTheme="system" storageKey="expense-tracker-theme">
+          <DashboardLayout>{children}</DashboardLayout>
+          <AppToaster />
+        </ThemeProvider>
       </body>
     </html>
   );

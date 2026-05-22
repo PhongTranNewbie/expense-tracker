@@ -36,7 +36,7 @@ const TREND_COLOR = "#8b5cf6";
 
 interface ReportExpense {
   id: string;
-  category: string;
+  category: { id: string; name: string };
   amount: number;
   date: Date;
 }
@@ -213,7 +213,7 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
     for (const row of expenses) {
       const ym = monthKeyFromDate(row.date);
       if (!monthKeySet.has(ym)) continue;
-      sums.set(row.category, (sums.get(row.category) ?? 0) + row.amount);
+      sums.set(row.category.name, (sums.get(row.category.name) ?? 0) + row.amount);
     }
     return [...sums.entries()]
       .map(([name, value]) => ({ name, value }))

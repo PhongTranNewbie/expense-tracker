@@ -9,7 +9,7 @@ export default async function ReportsPage() {
   const transformedExpenses = expenses.map((e) => ({
     id: e.id,
     // Extract the category name from the relation object
-    category: e.category?.name || e.category, // Handle both object and string cases
+    category: e.category, // Handle both object and string cases
     amount: e.amount,
     date: e.date,
   }));

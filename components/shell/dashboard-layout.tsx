@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const nav = [
   { href: "/", label: "Dashboard" },
@@ -108,6 +109,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </svg>
           </button>
           <h1 className="truncate text-base font-semibold">{title}</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6">{children}</main>

@@ -12,11 +12,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Thêm dòng này để kích hoạt Dark Mode theo Class cho Tailwind v4 */
+@theme {
+  --animate-accordion-down: slideDown 0.2s ease-out;
+}
+@variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {

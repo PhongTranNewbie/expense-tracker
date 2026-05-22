@@ -158,7 +158,25 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
-export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
+function LoadingChart() {
+  return (
+    <div className="flex h-[260px] items-center justify-center">
+      <div className="animate-pulse space-y-4 w-full">
+        <div className="h-4 bg-zinc-200 rounded dark:bg-zinc-800 w-3/4 mx-auto" />
+        <div className="h-4 bg-zinc-200 rounded dark:bg-zinc-800 w-1/2 mx-auto" />
+        <div className="h-32 bg-zinc-100 rounded dark:bg-zinc-800/50 w-full" />
+      </div>
+    </div>
+  );
+}
+
+export function ReportsView({
+  expenses,
+  isLoading = false
+}: {
+  expenses: ReportExpense[];
+  isLoading?: boolean;
+}) {
   const { currentMonthKey, lastMonthKey, monthKeys } = useMemo(() => {
     const now = new Date();
     const current = monthKeyFromDate(now);
@@ -226,20 +244,33 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month</p>
-          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.currentMonthTotal)}</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month</p>
-          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.lastMonthTotal)}</p>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Monthly Trend</p>
-          <p className={`mt-2 text-3xl font-bold ${stats.trend > 0 ? 'text-rose-500' : stats.trend < 0 ? 'text-emerald-500' : 'text-zinc-900 dark:text-zinc-50'}`}>
-            {stats.trend > 0 ? '+' : ''}{stats.trend}%
-          </p>
-        </div>
+        {isLoading ? (
+          <>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="mt-2 h-9 w-32 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month</p>
+              <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.currentMonthTotal)}</p>
+            </div>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month</p>
+              <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.lastMonthTotal)}</p>
+            </div>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Monthly Trend</p>
+              <p className={`mt-2 text-3xl font-bold ${stats.trend > 0 ? 'text-rose-500' : stats.trend < 0 ? 'text-emerald-500' : 'text-zinc-900 dark:text-zinc-50'}`}>
+                {stats.trend > 0 ? '+' : ''}{stats.trend}%
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -247,7 +278,9 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
           title="Monthly Spending"
           description="Total expenses per month."
         >
-          {!hasMonthlyData ? (
+          {isLoading ? (
+            <LoadingChart />
+          ) : !hasMonthlyData ? (
             <EmptyChart message="No expenses found." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
@@ -266,7 +299,9 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
           title="Category Breakdown"
           description="Spending distribution for the current month."
         >
-          {!hasCategoryData ? (
+          {isLoading ? (
+            <LoadingChart />
+          ) : !hasCategoryData ? (
             <EmptyChart message="No category data." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>

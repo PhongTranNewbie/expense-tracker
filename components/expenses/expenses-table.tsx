@@ -12,6 +12,7 @@ export type ExpenseRow = {
 
 type ExpensesTableProps = {
   expenses: ExpenseRow[];
+  isLoading?: boolean;
   title?: string;
   /** e.g. primary actions shown next to the section title */
   actions?: ReactNode;
@@ -29,6 +30,7 @@ const rowActions =
 
 export function ExpensesTable({
   expenses,
+  isLoading = false,
   title = "Recent expenses",
   actions,
   onEdit,
@@ -65,11 +67,40 @@ export function ExpensesTable({
       </div>
 
       <ul className="space-y-3 sm:hidden">
-        {paginatedExpenses.map((row) => (
-          <li
-            key={row.id}
-            className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10"
-          >
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <li
+              key={i}
+              className="animate-pulse rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="h-5 w-24 rounded bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-5 w-16 rounded bg-zinc-200 dark:bg-zinc-800" />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <div className="h-3 w-10 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                  <div className="h-4 w-20 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                </div>
+                <div className="space-y-1">
+                  <div className="h-3 w-10 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                  <div className="h-4 w-20 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                </div>
+              </div>
+            </li>
+          ))
+        ) : expenses.length === 0 ? (
+          <li className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 py-12 text-center dark:border-zinc-800 dark:bg-zinc-950/30">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              No expenses found.
+            </p>
+          </li>
+        ) : (
+          paginatedExpenses.map((row) => (
+            <li
+              key={row.id}
+              className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10"
+            >
             <div className="flex items-start justify-between gap-3">
               <p className="font-medium text-zinc-900 dark:text-zinc-50">
                 {row.category}
@@ -119,7 +150,8 @@ export function ExpensesTable({
               </div>
             ) : null}
           </li>
-        ))}
+        ))
+        )}
       </ul>
 
       <div className="hidden sm:block overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10">
@@ -137,45 +169,83 @@ export function ExpensesTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {paginatedExpenses.map((row) => (
-                <tr
-                  key={row.id}
-                  className="transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
-                >
-                  <td className={`${td} font-medium`}>{row.category}</td>
-                  <td className={td}>{row.amount}</td>
-                  <td className={`${td} text-zinc-600 dark:text-zinc-400`}>
-                    {row.date}
-                  </td>
-                  <td className={`${td} text-zinc-600 dark:text-zinc-400`}>
-                    {row.paymentMethod}
-                  </td>
-                  {showRowActions ? (
-                    <td className={`${td} text-right`}>
-                      <div className="flex flex-wrap justify-end gap-1.5">
-                        {onEdit ? (
-                          <button
-                            type="button"
-                            onClick={() => onEdit(row)}
-                            className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800`}
-                          >
-                            Edit
-                          </button>
-                        ) : null}
-                        {onDelete ? (
-                          <button
-                            type="button"
-                            onClick={() => onDelete(row)}
-                            className={`${rowActions} border border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/40`}
-                          >
-                            Delete
-                          </button>
-                        ) : null}
-                      </div>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className={td}>
+                      <div className="h-4 w-24 rounded bg-zinc-100 dark:bg-zinc-800/50" />
                     </td>
-                  ) : null}
+                    <td className={td}>
+                      <div className="h-4 w-16 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                    </td>
+                    <td className={td}>
+                      <div className="h-4 w-20 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                    </td>
+                    <td className={td}>
+                      <div className="h-4 w-24 rounded bg-zinc-100 dark:bg-zinc-800/50" />
+                    </td>
+                    {showRowActions ? (
+                      <td className={td}>
+                        <div className="flex justify-end gap-1.5">
+                          <div className="h-8 w-12 rounded-lg bg-zinc-100 dark:bg-zinc-800/50" />
+                          <div className="h-8 w-16 rounded-lg bg-zinc-100 dark:bg-zinc-800/50" />
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              ) : expenses.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={showRowActions ? 5 : 4}
+                    className="py-12 text-center"
+                  >
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      No expenses found.
+                    </p>
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedExpenses.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+                  >
+                    <td className={`${td} font-medium`}>{row.category}</td>
+                    <td className={td}>{row.amount}</td>
+                    <td className={`${td} text-zinc-600 dark:text-zinc-400`}>
+                      {row.date}
+                    </td>
+                    <td className={`${td} text-zinc-600 dark:text-zinc-400`}>
+                      {row.paymentMethod}
+                    </td>
+                    {showRowActions ? (
+                      <td className={`${td} text-right`}>
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          {onEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => onEdit(row)}
+                              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800`}
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                          {onDelete ? (
+                            <button
+                              type="button"
+                              onClick={() => onDelete(row)}
+                              className={`${rowActions} border border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/40`}
+                            >
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

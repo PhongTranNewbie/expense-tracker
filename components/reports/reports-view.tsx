@@ -212,13 +212,13 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
     const sums = new Map<string, number>();
     for (const row of expenses) {
       const ym = monthKeyFromDate(row.date);
-      if (!monthKeySet.has(ym)) continue;
+      if (ym !== currentMonthKey) continue;
       sums.set(row.category.name, (sums.get(row.category.name) ?? 0) + row.amount);
     }
     return [...sums.entries()]
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [expenses, monthKeySet]);
+  }, [expenses, currentMonthKey]);
 
   const hasMonthlyData = monthlySeries.some((m) => m.total > 0);
   const hasCategoryData = categoryPieData.length > 0;
@@ -264,7 +264,7 @@ export function ReportsView({ expenses }: { expenses: ReportExpense[] }) {
 
         <ChartCard
           title="Category Breakdown"
-          description="Spending distribution by category."
+          description="Spending distribution for the current month."
         >
           {!hasCategoryData ? (
             <EmptyChart message="No category data." />

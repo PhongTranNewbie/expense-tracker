@@ -115,3 +115,84 @@ export async function getReportsData(): Promise<ReportsData> {
     categoryPieData,
   };
 }
+
+export interface DashboardStats {
+  currentMonthTotal: number;
+  lastMonthTotal: number;
+  trend: number;
+  transactionCount: number;
+  topCategory: string;
+}
+
+/**
+ * Fetches dashboard summary statistics for the current month.
+ * Calculates expenses, trends, and top spending category.
+ */
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const now = new Date();
+  const currentMonthStart = startOfMonth(now);
+  const currentMonthEnd = endOfMonth(now);
+  const lastMonthStart = startOfMonth(subMonths(now, 1));
+  const lastMonthEnd = endOfMonth(subMonths(now, 1));
+
+  // Fetch current month expenses
+  const currentMonthExpenses = await prisma.expense.findMany({
+    where: {
+      date: {
+        gte: currentMonthStart,
+        lte: currentMonthEnd,
+      },
+    },
+    include: {
+      category: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  // Fetch last month expenses
+  const lastMonthExpenses = await prisma.expense.findMany({
+    where: {
+      date: {
+        gte: lastMonthStart,
+        lte: lastMonthEnd,
+      },
+    },
+  });
+
+  // Calculate totals
+  const currentMonthTotal = currentMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const lastMonthTotal = lastMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const transactionCount = currentMonthExpenses.length;
+
+  // Calculate trend percentage
+  const difference = currentMonthTotal - lastMonthTotal;
+  const trend = lastMonthTotal === 0 ? 0 : Math.round((difference / lastMonthTotal) * 100);
+
+  // Find top spending category for current month
+  const categoryMap = new Map<string, number>();
+  for (const expense of currentMonthExpenses) {
+    const categoryName = expense.category?.name || "Uncategorized";
+    categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + expense.amount);
+  }
+
+  // Get category with highest spending
+  let topCategory = "None";
+  let maxAmount = 0;
+  for (const [name, amount] of categoryMap.entries()) {
+    if (amount > maxAmount) {
+      maxAmount = amount;
+      topCategory = name;
+    }
+  }
+
+  return {
+    currentMonthTotal,
+    lastMonthTotal,
+    trend,
+    transactionCount,
+    topCategory,
+  };
+}

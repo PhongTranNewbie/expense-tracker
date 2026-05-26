@@ -1,43 +1,53 @@
 import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { getExpenses } from "@/lib/expenses";
-
-const summaryMock = [
-  {
-    label: "Total balance",
-    value: "$24,580.50",
-    hint: "Across all accounts",
-    variant: "balance" as const,
-  },
-  {
-    label: "Monthly expenses",
-    value: "$3,240.00",
-    hint: "So far this month",
-    variant: "expense" as const,
-  },
-  {
-    label: "Monthly income",
-    value: "$8,500.00",
-    hint: "After tax estimate",
-    variant: "income" as const,
-  },
-  {
-    label: "Savings",
-    value: "$5,260.00",
-    hint: "Income minus expenses",
-    variant: "savings" as const,
-  },
-];
+import { getDashboardStats } from "@/lib/stats";
 
 export default async function Home() {
-  const dbExpenses = await getExpenses();
-  const initialExpenses = dbExpenses.map((e) => ({
-    id: e.id,
-    category: e.category.name, // Handle both object and string cases
-    amount: new Intl.NumberFormat("en-US", {
+  const [dbExpenses, stats] = await Promise.all([
+    getExpenses(),
+    getDashboardStats(),
+  ]);
+
+  // Format currency helper
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(e.amount),
+    }).format(amount);
+
+  // Build summary cards with real data
+  const summaryData = [
+    {
+      label: "Monthly expenses",
+      value: formatCurrency(stats.currentMonthTotal),
+      hint: `${stats.transactionCount} transaction${stats.transactionCount !== 1 ? "s" : ""} this month`,
+      variant: "expense" as const,
+    },
+    {
+      label: "Previous month",
+      value: formatCurrency(stats.lastMonthTotal),
+      hint: `${stats.trend > 0 ? "+" : ""}${stats.trend}% vs this month`,
+      variant: "balance" as const,
+    },
+    {
+      label: "Top category",
+      value: stats.topCategory,
+      hint: "Highest spending this month",
+      variant: "income" as const,
+    },
+    {
+      label: "Month trend",
+      value: `${stats.trend > 0 ? "+" : ""}${stats.trend}%`,
+      hint: stats.trend > 0 ? "Spending increased" : stats.trend < 0 ? "Spending decreased" : "No change",
+      variant: stats.trend > 0 ? "expense" as const : "savings" as const,
+    },
+  ];
+
+  const initialExpenses = dbExpenses.map((e) => ({
+    id: e.id,
+    category: e.category.name,
+    amount: formatCurrency(e.amount),
     date: e.date.toISOString().split("T")[0],
     paymentMethod: e.paymentMethod,
   }));
@@ -45,10 +55,10 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Welcome back. Here&apos;s a quick snapshot of your finances.
+        Welcome back. Here's a quick snapshot of your finances.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {summaryMock.map((item) => (
+        {summaryData.map((item) => (
           <SummaryCard
             key={item.label}
             label={item.label}

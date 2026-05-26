@@ -1,61 +1,52 @@
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+
+/**
+ * Pure Database Queries Layer for Categories.
+ * No edge-case handling for UI, no caching revalidation.
+ */
 
 export async function getCategories() {
   try {
-    const categories = await db.category.findMany({
+    return await prisma.category.findMany({
       orderBy: {
         name: "asc",
       },
     });
-    return categories;
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    throw new Error("Failed to fetch categories");
+    console.error("Database error in getCategories:", error);
+    throw new Error("Failed to fetch categories from database");
   }
 }
 
 export async function createCategory(data: Prisma.CategoryCreateInput) {
   try {
-    const category = await db.category.create({
-      data: {
-        ...data,
-      },
-    });
-    revalidatePath("/categories");
-    return category;
+    return await prisma.category.create({ data });
   } catch (error) {
-    console.error("Error creating category:", error);
+    console.error("Database error in createCategory:", error);
     throw error;
   }
 }
 
 export async function updateCategory(id: string, data: Prisma.CategoryUpdateInput) {
   try {
-    const category = await db.category.update({
+    return await prisma.category.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data,
     });
-    revalidatePath("/categories");
-    return category;
   } catch (error) {
-    console.error("Error updating category:", error);
+    console.error("Database error in updateCategory:", error);
     throw error;
   }
 }
 
 export async function deleteCategory(id: string) {
   try {
-    const category = await db.category.delete({
+    return await prisma.category.delete({
       where: { id },
     });
-    revalidatePath("/categories");
-    return category;
   } catch (error) {
-    console.error("Error deleting category:", error);
+    console.error("Database error in deleteCategory:", error);
     throw error;
   }
 }

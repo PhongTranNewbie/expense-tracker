@@ -1,22 +1,19 @@
-import { getReportData } from "@/lib/expenses";
+import { getReportsData } from "@/lib/stats";
 import { ReportsView } from "@/components/reports/reports-view";
-import { Prisma } from "@prisma/client";
+
+export const metadata = {
+  title: "Financial Reports | MoneyVis",
+  description: "Analyze your monthly spending trends and category distribution.",
+};
 
 export default async function ReportsPage() {
-  const expenses = await getReportData();
-  
-  // Transform the data to match the expected ReportExpense interface
-  const transformedExpenses = expenses.map((e) => ({
-    id: e.id,
-    // Extract the category name from the relation object
-    category: e.category, // Handle both object and string cases
-    amount: e.amount,
-    date: e.date,
-  }));
+  // Fetch fully pre-aggregated data safely on the server side
+  const reportsData = await getReportsData();
 
   return (
     <div className="mx-auto max-w-6xl space-y-2 pb-6">
-      <ReportsView expenses={transformedExpenses} />
+      {/* Inject clean payload into presentation client view */}
+      <ReportsView data={reportsData} />
     </div>
   );
 }

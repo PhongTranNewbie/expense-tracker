@@ -1,327 +1,132 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import React from "react";
 import {
-  Area,
-  AreaChart,
-  Bar,
   BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
+  Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
+import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import { ReportsData } from "@/lib/stats";
 
-const MONTH_COUNT = 6;
-
-const CHART_COLORS = [
-  "#8b5cf6",
-  "#0ea5e9",
-  "#10b981",
-  "#f59e0b",
-  "#f43f5e",
-  "#6366f1",
-  "#14b8a6",
-  "#f97316",
-];
-
-const AXIS_TICK = { fontSize: 12, fill: "#71717a" };
-const GRID_STROKE = "#e4e4e7";
-const TREND_COLOR = "#8b5cf6";
-
-interface ReportExpense {
-  id: string;
-  category: { id: string; name: string };
-  amount: number;
-  date: Date;
+interface ReportsViewProps {
+  data: ReportsData;
 }
 
-function monthKeyFromDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+// Visual themes matching application design system
+const TREND_COLOR = "#2563eb"; // Tailwind blue-600
+const COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#c7d2fe", "#e0e7ff"];
 
-function getTrailingMonthKeys(count: number, anchor = new Date()): string[] {
-  const keys: string[] = [];
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
-    keys.push(monthKeyFromDate(d));
-  }
-  return keys;
-}
-
-function shortMonthLabel(ym: string): string {
-  const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, (m ?? 1) - 1, 1);
-  return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-}
-
-function formatMoney(n: number) {
+// Utility helpers for regional financial representation
+const formatMoney = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+    minimumFractionDigits: 0,
+  }).format(value);
+};
 
-function formatAxisMoney(n: number) {
-  if (n >= 1000) return `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
-  return `$${n}`;
-}
+const formatAxisMoney = (value: number) => {
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
+  return `$${value}`;
+};
 
-type TooltipPayload = { value?: number; name?: string };
-
-function MoneyTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  const value = payload[0]?.value ?? 0;
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-      {label ? (
-        <p className="mb-0.5 text-xs text-zinc-500 dark:text-zinc-400">{label}</p>
-      ) : null}
-      <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-        {formatMoney(value)}
-      </p>
-    </div>
-  );
-}
-
-function CategoryTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-}) {
-  if (!active || !payload?.length) return null;
-  const item = payload[0];
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-      <p className="font-medium text-zinc-900 dark:text-zinc-50">{item?.name}</p>
-      <p className="tabular-nums text-zinc-600 dark:text-zinc-300">
-        {formatMoney(item?.value ?? 0)}
-      </p>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  description,
-  children,
-  className = "",
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={
-        "rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 sm:p-6 " +
-        className
-      }
-    >
-      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          {description}
-        </p>
-      ) : null}
-      <div className="mt-5 min-h-[260px] w-full">{children}</div>
-    </section>
-  );
-}
-
-function EmptyChart({ message }: { message: string }) {
-  return (
-    <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 dark:border-zinc-700 dark:bg-zinc-950/30">
-      <p className="px-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        {message}
-      </p>
-    </div>
-  );
-}
-
-function LoadingChart() {
-  return (
-    <div className="flex h-[260px] items-center justify-center">
-      <div className="animate-pulse space-y-4 w-full">
-        <div className="h-4 bg-zinc-200 rounded dark:bg-zinc-800 w-3/4 mx-auto" />
-        <div className="h-4 bg-zinc-200 rounded dark:bg-zinc-800 w-1/2 mx-auto" />
-        <div className="h-32 bg-zinc-100 rounded dark:bg-zinc-800/50 w-full" />
-      </div>
-    </div>
-  );
-}
-
-export function ReportsView({
-  expenses,
-  isLoading = false
-}: {
-  expenses: ReportExpense[];
-  isLoading?: boolean;
-}) {
-  const { currentMonthKey, lastMonthKey, monthKeys } = useMemo(() => {
-    const now = new Date();
-    const current = monthKeyFromDate(now);
-    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const last = monthKeyFromDate(lastDate);
-    const trailing = getTrailingMonthKeys(MONTH_COUNT, now);
-    return { currentMonthKey: current, lastMonthKey: last, monthKeys: trailing };
-  }, []);
-
-  const monthKeySet = useMemo(() => new Set(monthKeys), [monthKeys]);
-
-  const stats = useMemo(() => {
-    let currentMonthTotal = 0;
-    let lastMonthTotal = 0;
-
-    for (const row of expenses) {
-      const ym = monthKeyFromDate(row.date);
-      if (ym === currentMonthKey) currentMonthTotal += row.amount;
-      if (ym === lastMonthKey) lastMonthTotal += row.amount;
-    }
-
-    const diff = currentMonthTotal - lastMonthTotal;
-    const trend =
-      lastMonthTotal === 0
-        ? 0
-        : Math.round((diff / lastMonthTotal) * 100);
-
-    return {
-      currentMonthTotal,
-      lastMonthTotal,
-      trend,
-    };
-  }, [expenses, currentMonthKey, lastMonthKey]);
-
-  const monthlySeries = useMemo(() => {
-    const sums = new Map<string, number>();
-    for (const key of monthKeys) sums.set(key, 0);
-    for (const row of expenses) {
-      const ym = monthKeyFromDate(row.date);
-      if (!monthKeySet.has(ym)) continue;
-      sums.set(ym, (sums.get(ym) ?? 0) + row.amount);
-    }
-    return monthKeys.map((key) => ({
-      key,
-      label: shortMonthLabel(key),
-      total: sums.get(key) ?? 0,
-    }));
-  }, [expenses, monthKeys, monthKeySet]);
-
-  const categoryPieData = useMemo(() => {
-    const sums = new Map<string, number>();
-    for (const row of expenses) {
-      const ym = monthKeyFromDate(row.date);
-      if (ym !== currentMonthKey) continue;
-      sums.set(row.category.name, (sums.get(row.category.name) ?? 0) + row.amount);
-    }
-    return [...sums.entries()]
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [expenses, currentMonthKey]);
+export function ReportsView({ data }: ReportsViewProps) {
+  const { stats, monthlySeries, categoryPieData } = data;
 
   const hasMonthlyData = monthlySeries.some((m) => m.total > 0);
   const hasCategoryData = categoryPieData.length > 0;
 
   return (
     <div className="space-y-6">
+      {/* KPI Stats Panel */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="animate-pulse rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="h-4 w-20 rounded bg-zinc-200 dark:bg-zinc-800" />
-                <div className="mt-2 h-9 w-32 rounded bg-zinc-100 dark:bg-zinc-800/50" />
-              </div>
-            ))}
-          </>
-        ) : (
-          <>
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month</p>
-              <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.currentMonthTotal)}</p>
-            </div>
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month</p>
-              <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-50">{formatMoney(stats.lastMonthTotal)}</p>
-            </div>
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Monthly Trend</p>
-              <p className={`mt-2 text-3xl font-bold ${stats.trend > 0 ? 'text-rose-500' : stats.trend < 0 ? 'text-emerald-500' : 'text-zinc-900 dark:text-zinc-50'}`}>
-                {stats.trend > 0 ? '+' : ''}{stats.trend}%
-              </p>
-            </div>
-          </>
-        )}
+        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month Expenses</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            {formatMoney(stats.currentMonthTotal)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month Expenses</p>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            {formatMoney(stats.lastMonthTotal)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Month-over-Month Trend</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              {stats.trend > 0 ? `+${stats.trend}%` : `${stats.trend}%`}
+            </span>
+            {stats.trend > 0 ? (
+              <TrendingUp className="h-6 w-6 text-red-500" />
+            ) : stats.trend < 0 ? (
+              <TrendingDown className="h-6 w-6 text-green-500" />
+            ) : (
+              <Minus className="h-6 w-6 text-zinc-400" />
+            )}
+          </div>
+        </div>
       </div>
 
+      {/* Main Analytical Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartCard
-          title="Monthly Spending"
-          description="Total expenses per month."
-        >
-          {isLoading ? (
-            <LoadingChart />
-          ) : !hasMonthlyData ? (
-            <EmptyChart message="No expenses found." />
+        {/* Monthly Trend Analytics */}
+        <ChartCard title="Monthly Spending" description="Evolution of overall expenses over the last 6 months.">
+          {!hasMonthlyData ? (
+            <EmptyChartState message="No historical expense records available for this period." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthlySeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_STROKE} />
-                <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={formatAxisMoney} />
-                <Tooltip content={<MoneyTooltip />} cursor={{ fill: '#f4f4f5', opacity: 0.4 }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                <XAxis dataKey="label" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis
+                  stroke="#71717a"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={formatAxisMoney}
+                />
+                <Tooltip content={<CustomChartTooltip />} cursor={{ fill: "#f4f4f5", opacity: 0.4 }} />
                 <Bar dataKey="total" fill={TREND_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
 
-        <ChartCard
-          title="Category Breakdown"
-          description="Spending distribution for the current month."
-        >
-          {isLoading ? (
-            <LoadingChart />
-          ) : !hasCategoryData ? (
-            <EmptyChart message="No category data." />
+        {/* Category Breakdown Analytics */}
+        <ChartCard title="Category Breakdown" description="Distribution of current month expenses across active categories.">
+          {!hasCategoryData ? (
+            <EmptyChartState message="No expense entries posted for the current calendar month." />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   data={categoryPieData}
-                  dataKey="value"
-                  nameKey="name"
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  outerRadius={90}
+                  paddingAngle={4}
+                  dataKey="value"
                 >
                   {categoryPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip content={<CategoryTooltip />} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Tooltip content={<CustomChartTooltip />} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -329,4 +134,62 @@ export function ReportsView({
       </div>
     </div>
   );
+}
+
+/* --- Reusable Scoped Subcomponents for Layout Organization --- */
+
+interface ChartCardProps {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+function ChartCard({ title, description, children }: ChartCardProps) {
+  return (
+    <div className="flex flex-col rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div>
+        <h3 className="font-semibold leading-none tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h3>
+        <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">{description}</p>
+      </div>
+      <div className="mt-6 flex-1 flex flex-col justify-center">{children}</div>
+    </div>
+  );
+}
+
+function EmptyChartState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <Info className="h-8 w-8 text-zinc-300 dark:text-zinc-700" />
+      <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">{message}</p>
+    </div>
+  );
+}
+
+interface TooltipPayloadItem {
+  name?: string;
+  value: number;
+  payload: {
+    label?: string;
+  };
+}
+
+interface CustomChartTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+}
+
+function CustomChartTooltip({ active, payload }: CustomChartTooltipProps) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-white p-3 shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          {payload[0].name || payload[0].payload.label}
+        </p>
+        <p className="mt-0.5 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+          {formatMoney(payload[0].value)}
+        </p>
+      </div>
+    );
+  }
+  return null;
 }

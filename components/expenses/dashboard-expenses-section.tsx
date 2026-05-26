@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
-import { getCategories } from "@/app/actions/categories";
+import { getCategoriesAction } from "@/app/actions/categories";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -93,17 +93,26 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   // Load categories when component mounts
   useEffect(() => {
     async function loadCategories() {
-      const result = await getCategories();
-      if (result.success && result.data) {
-        setCategories(result.data);
-        // Set first category as default if available
-        if (result.data.length > 0 && !category) {
-          setCategory(result.data[0].name);
-        }
+      try {
+        const result = await getCategoriesAction();
+        
+        // Kiểm tra an toàn: Có kết quả trả về và chứa mảng data hợp lệ
+        if (result && result.data && Array.isArray(result.data)) {
+          setCategories(result.data);
+          
+          // Đặt danh mục đầu tiên làm mặc định nếu có
+          if (result.data.length > 0 && !category) {
+            setCategory(result.data[0].name);
+          } 
+        } else {
+            console.error("Failed to load categories:", result.error);
+          }
+      } catch (error) {
+        console.error("Failed to load categories in dashboard:", error);
       }
     }
     loadCategories();
-  }, []);
+  }, []); // Thêm category vào dependency nếu hook có sử dụng trạng thái của nó
 
   const resetForm = useCallback(() => {
     setCategory(categories.length > 0 ? categories[0].name : "");
@@ -209,9 +218,10 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
 
   const categoryOptions = useMemo(() => {
-    const names = new Set(expenses.map((e) => e.category));
-    return [...names].sort((a, b) => a.localeCompare(b));
-  }, [expenses]);
+    // Lấy trực tiếp tên từ danh sách categories đã fetch từ API
+    const names = categories.map((c) => c.name);
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [categories]);
 
   const displayedExpenses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

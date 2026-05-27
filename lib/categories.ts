@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 
 /**
  * Pure Database Queries Layer for Categories.
@@ -19,20 +18,30 @@ export async function getCategories() {
   }
 }
 
-export async function createCategory(data: Prisma.CategoryCreateInput) {
+interface CategoryData {
+  name: string;
+}
+
+export async function createCategory(data: CategoryData) {
   try {
-    return await prisma.category.create({ data });
+    return await prisma.category.create({
+      data: {
+        name: data.name,
+      },
+    });
   } catch (error) {
     console.error("Database error in createCategory:", error);
     throw error;
   }
 }
 
-export async function updateCategory(id: string, data: Prisma.CategoryUpdateInput) {
+export async function updateCategory(id: string, data: CategoryData) {
   try {
     return await prisma.category.update({
       where: { id },
-      data,
+      data: {
+        name: data.name,
+      },
     });
   } catch (error) {
     console.error("Database error in updateCategory:", error);

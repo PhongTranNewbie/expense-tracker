@@ -1,5 +1,10 @@
 import { prisma } from "./db";
 
+/**
+ * Pure Database Queries Layer for Expenses.
+ * No edge-case handling for UI, no caching revalidation.
+ */
+
 export async function getExpenses() {
   try {
     const expenses = await prisma.expense.findMany({
@@ -46,5 +51,56 @@ export async function getReportData() {
   } catch (error) {
     console.error("Error fetching report data:", error);
     throw new Error("Failed to fetch report data");
+  }
+}
+
+interface ExpenseData {
+  categoryId: string;
+  amount: number;
+  date: Date;
+  paymentMethod: string;
+}
+
+export async function createExpense(data: ExpenseData) {
+  try {
+    return await prisma.expense.create({
+      data: {
+        amount: data.amount,
+        date: data.date,
+        paymentMethod: data.paymentMethod,
+        categoryId: data.categoryId,
+      },
+    });
+  } catch (error) {
+    console.error("Database error in createExpense:", error);
+    throw error;
+  }
+}
+
+export async function updateExpense(id: string, data: ExpenseData) {
+  try {
+    return await prisma.expense.update({
+      where: { id },
+      data: {
+        amount: data.amount,
+        date: data.date,
+        paymentMethod: data.paymentMethod,
+        categoryId: data.categoryId,
+      },
+    });
+  } catch (error) {
+    console.error("Database error in updateExpense:", error);
+    throw error;
+  }
+}
+
+export async function deleteExpense(id: string) {
+  try {
+    return await prisma.expense.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error("Database error in deleteExpense:", error);
+    throw error;
   }
 }

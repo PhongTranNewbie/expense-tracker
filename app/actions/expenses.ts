@@ -1,30 +1,41 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
+import * as dbLayer from "@/lib/expenses";
+
+/**
+ * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
+ * Manages mutations, data stabilization, and UI cache revalidation.
+ */
 
 export async function createExpense(formData: {
-  category: string;     // Tên danh mục (ví dụ: "Ăn uống") để phục vụ code hiển thị cũ
-  categoryId: string;   // ID danh mục từ bảng Category mới để tạo liên kết chuẩn
+  category: string;     // Legacy field for UI compatibility
+  categoryId: string;   // Standard category ID
   amount: number;
   date: string;
   paymentMethod: string;
 }) {
   try {
-    await prisma.expense.create({
-      data: {
-        categoryId: formData.categoryId, // Lưu ID liên kết xuống DB
-        amount: formData.amount,
-        date: new Date(formData.date),
-        paymentMethod: formData.paymentMethod,
-      },
+    // Validation
+    if (!formData.categoryId) return { success: false, error: "Category is required" };
+    if (!formData.amount || formData.amount <= 0) return { success: false, error: "Amount must be greater than 0" };
+    if (!formData.date) return { success: false, error: "Date is required" };
+
+    // Call the underlying database operation from lib
+    // ✅ CORRECT: Passing flat data, no Prisma relation syntax
+    await dbLayer.createExpense({
+      categoryId: formData.categoryId,
+      amount: formData.amount,
+      date: new Date(formData.date),
+      paymentMethod: formData.paymentMethod,
     });
 
+    // Clear next.js path cache to reflect changes immediately on UI
     revalidatePath("/");
     revalidatePath("/reports");
     return { success: true };
   } catch (error) {
-    console.error("Error creating expense:", error);
+    console.error("Server Action Error [createExpense]:", error);
     return { success: false, error: "Failed to create expense" };
   }
 }
@@ -40,36 +51,40 @@ export async function updateExpense(
   }
 ) {
   try {
-    await prisma.expense.update({
-      where: { id },
-      data: {
-        categoryId: formData.categoryId, // Cập nhật lại ID liên kết mới
-        amount: formData.amount,
-        date: new Date(formData.date),
-        paymentMethod: formData.paymentMethod,
-      },
+    // Validation
+    if (!id) return { success: false, error: "Expense ID is required" };
+    if (!formData.categoryId) return { success: false, error: "Category is required" };
+    if (!formData.amount || formData.amount <= 0) return { success: false, error: "Amount must be greater than 0" };
+    if (!formData.date) return { success: false, error: "Date is required" };
+
+    // ✅ CORRECT: Passing flat data, no Prisma relation syntax
+    await dbLayer.updateExpense(id, {
+      categoryId: formData.categoryId,
+      amount: formData.amount,
+      date: new Date(formData.date),
+      paymentMethod: formData.paymentMethod,
     });
 
     revalidatePath("/");
     revalidatePath("/reports");
     return { success: true };
   } catch (error) {
-    console.error("Error updating expense:", error);
+    console.error("Server Action Error [updateExpense]:", error);
     return { success: false, error: "Failed to update expense" };
   }
 }
 
 export async function deleteExpense(id: string) {
   try {
-    await prisma.expense.delete({
-      where: { id },
-    });
+    if (!id) return { success: false, error: "Expense ID is required" };
+
+    await dbLayer.deleteExpense(id);
 
     revalidatePath("/");
     revalidatePath("/reports");
     return { success: true };
   } catch (error) {
-    console.error("Error deleting expense:", error);
+    console.error("Server Action Error [deleteExpense]:", error);
     return { success: false, error: "Failed to delete expense" };
   }
 }

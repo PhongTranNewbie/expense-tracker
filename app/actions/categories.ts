@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import * as dbLayer from "@/lib/categories";
-import { getCategories } from "@/lib/categories";
 
 /**
  * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
@@ -63,7 +62,7 @@ export async function deleteCategoryAction(id: string) {
 
 export async function getCategoriesAction() {
   try {
-    const data = await getCategories();
+    const data = await dbLayer.getCategories();
     return { success: true, data };
   } catch (error) {
     console.error("Failed to fetch categories via action:", error);

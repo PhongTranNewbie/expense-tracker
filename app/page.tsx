@@ -1,4 +1,4 @@
-import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
+import { RecentExpensesPreview } from "@/components/expenses/recent-expenses-preview";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { getExpenses } from "@/lib/expenses";
 import { getDashboardStats } from "@/lib/stats";
@@ -38,7 +38,7 @@ export default async function Home() {
     },
   ];
 
-  const initialExpenses = dbExpenses.map((e) => ({
+  const recentExpenses = dbExpenses.map((e) => ({
     id: e.id,
     category: e.category.name,
     amount: formatCurrency(e.amount),
@@ -49,7 +49,7 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Welcome back. Here&apos;s a quick snapshot of your finances.
+        Welcome back. Here&apos;s a quick snapshot of your finances.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryData.map((item) => (
@@ -62,7 +62,7 @@ export default async function Home() {
           />
         ))}
       </div>
-      <DashboardExpensesSection key={JSON.stringify(initialExpenses)} initialExpenses={initialExpenses} />
+      <RecentExpensesPreview expenses={recentExpenses} />
     </div>
   );
 }

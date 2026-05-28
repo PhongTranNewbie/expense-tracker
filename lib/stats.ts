@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { formatMonthYear } from "./formatters";
 
 export interface MonthlySeriesData {
   label: string;
@@ -95,7 +96,7 @@ export async function getReportsData(): Promise<ReportsData> {
     const [year, month] = key.split("-");
     const dateObject = new Date(Number(year), Number(month) - 1, 1);
     return {
-      label: dateObject.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      label: formatMonthYear(dateObject),
       total,
     };
   });

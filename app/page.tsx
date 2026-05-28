@@ -2,19 +2,13 @@ import { DashboardExpensesSection } from "@/components/expenses/dashboard-expens
 import { SummaryCard } from "@/components/ui/summary-card";
 import { getExpenses } from "@/lib/expenses";
 import { getDashboardStats } from "@/lib/stats";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 
 export default async function Home() {
   const [dbExpenses, stats] = await Promise.all([
     getExpenses(),
     getDashboardStats(),
   ]);
-
-  // Format currency helper
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
 
   // Build summary cards with real data
   const summaryData = [
@@ -48,7 +42,7 @@ export default async function Home() {
     id: e.id,
     category: e.category.name,
     amount: formatCurrency(e.amount),
-    date: e.date.toISOString().split("T")[0],
+    date: formatDate(e.date),
     paymentMethod: e.paymentMethod,
   }));
 

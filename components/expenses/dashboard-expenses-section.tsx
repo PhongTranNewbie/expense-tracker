@@ -5,6 +5,7 @@ import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-t
 import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
 import { getCategoriesAction } from "@/app/actions/categories";
+import { formatCurrency } from "@/lib/formatters";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -17,13 +18,6 @@ const PAYMENT_OPTIONS = [
 type FormErrors = Partial<
   Record<"category" | "amount" | "date" | "paymentMethod", string>
 >;
-
-function formatUsd(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 /** Parse stored display amount (e.g. "$124.50") for the amount input */
 function amountForInput(displayAmount: string): string {
@@ -189,7 +183,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
       const result = await updateExpense(editingId, formData);
       if (result.success) {
         setExpenses((prev) =>
-          prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatUsd(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
+          prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatCurrency(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
         );
         toast.success("Expense updated");
         closeModal();
@@ -202,7 +196,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
         const row: ExpenseRow = {
           id: crypto.randomUUID(),
           category: formData.category,
-          amount: formatUsd(n),
+          amount: formatCurrency(n),
           date: formData.date,
           paymentMethod: formData.paymentMethod,
         };

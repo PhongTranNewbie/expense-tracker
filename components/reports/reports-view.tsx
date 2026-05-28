@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import { ReportsData } from "@/lib/stats";
+import { formatCurrency } from "@/lib/formatters";
 
 interface ReportsViewProps {
   data: ReportsData;
@@ -24,15 +25,6 @@ interface ReportsViewProps {
 // Visual themes matching application design system
 const TREND_COLOR = "#2563eb"; // Tailwind blue-600
 const COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#c7d2fe", "#e0e7ff"];
-
-// Utility helpers for regional financial representation
-const formatMoney = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-  }).format(value);
-};
 
 const formatAxisMoney = (value: number) => {
   if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`;
@@ -52,14 +44,14 @@ export function ReportsView({ data }: ReportsViewProps) {
         <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month Expenses</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {formatMoney(stats.currentMonthTotal)}
+            {formatCurrency(stats.currentMonthTotal)}
           </p>
         </div>
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month Expenses</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {formatMoney(stats.lastMonthTotal)}
+            {formatCurrency(stats.lastMonthTotal)}
           </p>
         </div>
 
@@ -186,7 +178,7 @@ function CustomChartTooltip({ active, payload }: CustomChartTooltipProps) {
           {payload[0].name || payload[0].payload.label}
         </p>
         <p className="mt-0.5 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-          {formatMoney(payload[0].value)}
+          {formatCurrency(payload[0].value)}
         </p>
       </div>
     );

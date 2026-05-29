@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import * as dbLayer from "@/lib/expenses";
+import { createExpenseSchema, updateExpenseSchema } from "@/lib/validations/expense-schema";
 
 /**
  * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
@@ -16,18 +17,23 @@ export async function createExpense(formData: {
   paymentMethod: string;
 }) {
   try {
-    // Validation
-    if (!formData.categoryId) return { success: false, error: "Category is required" };
-    if (!formData.amount || formData.amount <= 0) return { success: false, error: "Amount must be greater than 0" };
-    if (!formData.date) return { success: false, error: "Date is required" };
+    // Validate input using Zod schema
+    const validation = createExpenseSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      return { success: false, error: firstError.message };
+    }
+
+    const validatedData = validation.data;
 
     // Call the underlying database operation from lib
     // ✅ CORRECT: Passing flat data, no Prisma relation syntax
     await dbLayer.createExpense({
-      categoryId: formData.categoryId,
-      amount: formData.amount,
-      date: new Date(formData.date),
-      paymentMethod: formData.paymentMethod,
+      categoryId: validatedData.categoryId,
+      amount: validatedData.amount,
+      date: new Date(validatedData.date),
+      paymentMethod: validatedData.paymentMethod,
     });
 
     // Clear next.js path cache to reflect changes immediately on UI
@@ -51,18 +57,25 @@ export async function updateExpense(
   }
 ) {
   try {
-    // Validation
+    // Validate expense ID
     if (!id) return { success: false, error: "Expense ID is required" };
-    if (!formData.categoryId) return { success: false, error: "Category is required" };
-    if (!formData.amount || formData.amount <= 0) return { success: false, error: "Amount must be greater than 0" };
-    if (!formData.date) return { success: false, error: "Date is required" };
+
+    // Validate input using Zod schema
+    const validation = updateExpenseSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      return { success: false, error: firstError.message };
+    }
+
+    const validatedData = validation.data;
 
     // ✅ CORRECT: Passing flat data, no Prisma relation syntax
     await dbLayer.updateExpense(id, {
-      categoryId: formData.categoryId,
-      amount: formData.amount,
-      date: new Date(formData.date),
-      paymentMethod: formData.paymentMethod,
+      categoryId: validatedData.categoryId,
+      amount: validatedData.amount,
+      date: new Date(validatedData.date),
+      paymentMethod: validatedData.paymentMethod,
     });
 
     revalidatePath("/");

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import * as dbLayer from "@/lib/categories";
+import { createCategorySchema, updateCategorySchema } from "@/lib/validations/category-schema";
 
 /**
  * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
@@ -10,12 +11,29 @@ import * as dbLayer from "@/lib/categories";
 
 export async function createCategoryAction(name: string) {
   try {
-    if (!name || name.trim() === "") {
-      return { success: false, error: "Category name cannot be empty" };
+    // Validate input using Zod schema
+    const validation = createCategorySchema.safeParse({ name });
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      return { success: false, error: firstError.message };
+    }
+
+    const validatedData = validation.data;
+
+    // Check for duplicate category (case-insensitive)
+    const existingCategories = await dbLayer.getCategories();
+    const normalizedName = validatedData.name.toLowerCase();
+    const isDuplicate = existingCategories.some(
+      (cat) => cat.name.toLowerCase() === normalizedName
+    );
+
+    if (isDuplicate) {
+      return { success: false, error: "A category with this name already exists" };
     }
 
     // Call the underlying database operation from lib
-    const category = await dbLayer.createCategory({ name: name.trim() });
+    const category = await dbLayer.createCategory({ name: validatedData.name });
     
     // Clear next.js path cache to reflect changes immediately on UI
     revalidatePath("/categories");
@@ -28,10 +46,31 @@ export async function createCategoryAction(name: string) {
 
 export async function updateCategoryAction(id: string, name: string) {
   try {
+    // Validate category ID
     if (!id) return { success: false, error: "Category ID is required" };
-    if (!name || name.trim() === "") return { success: false, error: "Category name cannot be empty" };
 
-    const category = await dbLayer.updateCategory(id, { name: name.trim() });
+    // Validate input using Zod schema
+    const validation = updateCategorySchema.safeParse({ name });
+    
+    if (!validation.success) {
+      const firstError = validation.error.issues[0];
+      return { success: false, error: firstError.message };
+    }
+
+    const validatedData = validation.data;
+
+    // Check for duplicate category (case-insensitive), excluding current category
+    const existingCategories = await dbLayer.getCategories();
+    const normalizedName = validatedData.name.toLowerCase();
+    const isDuplicate = existingCategories.some(
+      (cat) => cat.id !== id && cat.name.toLowerCase() === normalizedName
+    );
+
+    if (isDuplicate) {
+      return { success: false, error: "A category with this name already exists" };
+    }
+
+    const category = await dbLayer.updateCategory(id, { name: validatedData.name });
     
     revalidatePath("/categories");
     return { success: true, data: category };

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { TrashIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 type Category = {
   id: string;
@@ -24,6 +25,9 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
   const [isPendingUpdate, startUpdateTransition] = useTransition();
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,9 +70,23 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
     });
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+  const openDeleteConfirm = (id: string) => {
+    setCategoryToDelete(id);
+    setConfirmDialogOpen(true);
+  };
+
+  const closeDeleteConfirm = () => {
+    setConfirmDialogOpen(false);
+    setCategoryToDelete(null);
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    
+    const id = categoryToDelete;
     setDeletingCategoryId(id);
+    closeDeleteConfirm();
+    
     startDeleteTransition(async () => {
       try {
         const result = await deleteCategoryAction(id);
@@ -173,7 +191,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
                   </button>
                 )}
                 <button
-                  onClick={() => handleDeleteCategory(category.id)}
+                  onClick={() => openDeleteConfirm(category.id)}
                   disabled={isPendingDelete || isPendingUpdate}
                   className="text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete category"
@@ -189,6 +207,18 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
           ))}
         </div>
       )}
+      
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDeleteCategory}
+        title="Delete category"
+        description="Are you sure you want to delete this category? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isPendingDelete}
+        variant="danger"
+      />
     </div>
   );
 }

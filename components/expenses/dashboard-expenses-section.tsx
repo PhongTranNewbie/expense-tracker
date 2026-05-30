@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
 import { getCategoriesAction } from "@/app/actions/categories";
 import { formatCurrency } from "@/lib/formatters";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -86,6 +87,9 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
 
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<ExpenseRow | null>(null);
+
   const isEdit = editingId !== null;
 
   // Load categories when component mounts
@@ -141,9 +145,23 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
     setOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (row: ExpenseRow) => {
-    if (!window.confirm("Remove this expense?")) return;
+  const openDeleteConfirm = useCallback((row: ExpenseRow) => {
+    setExpenseToDelete(row);
+    setConfirmDialogOpen(true);
+  }, []);
+
+  const closeDeleteConfirm = useCallback(() => {
+    setConfirmDialogOpen(false);
+    setExpenseToDelete(null);
+  }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!expenseToDelete) return;
+    
+    const row = expenseToDelete;
     setDeletingExpenseId(row.id);
+    closeDeleteConfirm();
+    
     startDeleteTransition(async () => {
       const result = await deleteExpense(row.id);
       if (result.success) {
@@ -154,7 +172,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
       }
       setDeletingExpenseId(null);
     });
-  }, []);
+  }, [expenseToDelete, closeDeleteConfirm]);
 
   useEffect(() => {
     if (!open) return;
@@ -339,7 +357,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
         <ExpensesTable
           expenses={displayedExpenses}
           onEdit={openEditModal}
-          onDelete={handleDelete}
+          onDelete={openDeleteConfirm}
           actions={
             <button
               type="button"
@@ -554,6 +572,18 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
+        title="Delete expense"
+        description="Are you sure you want to remove this expense? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isPendingDelete}
+        variant="danger"
+      />
     </>
   );
 }

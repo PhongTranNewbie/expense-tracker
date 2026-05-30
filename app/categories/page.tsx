@@ -1,5 +1,5 @@
 import { getCategories } from "@/lib/categories";
-import { CategoriesClientView } from "./categories-client";
+import { CategoriesClientView } from "@/components/categories/categories-client-view";
 
 export const metadata = {
   title: "Manage Categories | MoneyVis",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
 import { TrashIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -19,58 +19,72 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState("");
+  
+  const [isPendingCreate, startCreateTransition] = useTransition();
+  const [isPendingUpdate, startUpdateTransition] = useTransition();
+  const [isPendingDelete, startDeleteTransition] = useTransition();
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
-    try {
-      const result = await createCategoryAction(newCategoryName);
-      if (result.success && result.data) {
-        setCategories([...categories, result.data]);
-        setNewCategoryName("");
-        toast.success("Category created successfully");
-      } else {
-        toast.error(result.error || "Failed to create category");
+    startCreateTransition(async () => {
+      try {
+        const result = await createCategoryAction(newCategoryName);
+        if (result.success && result.data) {
+          setCategories([...categories, result.data]);
+          setNewCategoryName("");
+          toast.success("Category created successfully");
+        } else {
+          toast.error(result.error || "Failed to create category");
+        }
+      } catch (error) {
+        console.error("Error creating category:", error);
+        toast.error("Failed to create category");
       }
-    } catch (error) {
-      console.error("Error creating category:", error);
-      toast.error("Failed to create category");
-    }
+    });
   };
 
   const handleUpdateCategory = async (id: string, name: string) => {
     if (!name.trim()) return;
-    try {
-      const result = await updateCategoryAction(id, name);
-      if (result.success) {
-        setCategories(categories.map(cat => cat.id === id ? { ...cat, name: name.trim() } : cat));
-        setEditingCategoryId(null);
-        setEditingCategoryName("");
-        toast.success("Category updated successfully");
-      } else {
-        toast.error(result.error || "Failed to update category");
+    startUpdateTransition(async () => {
+      try {
+        const result = await updateCategoryAction(id, name);
+        if (result.success) {
+          setCategories(categories.map(cat => cat.id === id ? { ...cat, name: name.trim() } : cat));
+          setEditingCategoryId(null);
+          setEditingCategoryName("");
+          toast.success("Category updated successfully");
+        } else {
+          toast.error(result.error || "Failed to update category");
+        }
+      } catch (error) {
+        console.error("Error updating category:", error);
+        toast.error("Failed to update category");
       }
-    } catch (error) {
-      console.error("Error updating category:", error);
-      toast.error("Failed to update category");
-    }
+    });
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
-    try {
-      const result = await deleteCategoryAction(id);
-      if (result.success) {
-        setCategories(categories.filter(category => category.id !== id));
-        toast.success("Category deleted successfully");
-      } else {
-        toast.error(result.error || "Failed to delete category");
+    setDeletingCategoryId(id);
+    startDeleteTransition(async () => {
+      try {
+        const result = await deleteCategoryAction(id);
+        if (result.success) {
+          setCategories(categories.filter(category => category.id !== id));
+          toast.success("Category deleted successfully");
+        } else {
+          toast.error(result.error || "Failed to delete category");
+        }
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        toast.error("Failed to delete category");
+      } finally {
+        setDeletingCategoryId(null);
       }
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      toast.error("Failed to delete category");
-    }
+    });
   };
 
   const startEditing = (category: Category) => {
@@ -101,10 +115,11 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
           />
           <button
             type="submit"
-            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            disabled={isPendingCreate}
+            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
           >
             <PlusIcon size={16} />
-            Add
+            {isPendingCreate ? "Adding..." : "Add"}
           </button>
         </form>
       </div>
@@ -142,14 +157,16 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
                 {editingCategoryId === category.id ? (
                   <button
                     onClick={() => cancelEditing()}
-                    className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    disabled={isPendingUpdate}
+                    className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Cancel
+                    {isPendingUpdate ? "Saving..." : "Cancel"}
                   </button>
                 ) : (
                   <button
                     onClick={() => startEditing(category)}
-                    className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    disabled={isPendingDelete || isPendingUpdate}
+                    className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Edit category"
                   >
                     <PencilIcon size={16} />
@@ -157,10 +174,15 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
                 )}
                 <button
                   onClick={() => handleDeleteCategory(category.id)}
-                  className="text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  disabled={isPendingDelete || isPendingUpdate}
+                  className="text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete category"
                 >
-                  <TrashIcon size={16} />
+                  {deletingCategoryId === category.id && isPendingDelete ? (
+                    <span className="text-xs">Deleting...</span>
+                  ) : (
+                    <TrashIcon size={16} />
+                  )}
                 </button>
               </div>
             </div>

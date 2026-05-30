@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
@@ -82,6 +82,10 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
+  const [isPendingSubmit, startSubmitTransition] = useTransition();
+  const [isPendingDelete, startDeleteTransition] = useTransition();
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+
   const isEdit = editingId !== null;
 
   // Load categories when component mounts
@@ -139,13 +143,17 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
 
   const handleDelete = useCallback(async (row: ExpenseRow) => {
     if (!window.confirm("Remove this expense?")) return;
-    const result = await deleteExpense(row.id);
-    if (result.success) {
-      setExpenses((prev) => prev.filter((r) => r.id !== row.id));
-      toast.success("Expense deleted");
-    } else {
-      toast.error(result.error || "Failed to delete expense");
-    }
+    setDeletingExpenseId(row.id);
+    startDeleteTransition(async () => {
+      const result = await deleteExpense(row.id);
+      if (result.success) {
+        setExpenses((prev) => prev.filter((r) => r.id !== row.id));
+        toast.success("Expense deleted");
+      } else {
+        toast.error(result.error || "Failed to delete expense");
+      }
+      setDeletingExpenseId(null);
+    });
   }, []);
 
   useEffect(() => {
@@ -179,34 +187,36 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
       paymentMethod,
     };
 
-    if (editingId) {
-      const result = await updateExpense(editingId, formData);
-      if (result.success) {
-        setExpenses((prev) =>
-          prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatCurrency(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
-        );
-        toast.success("Expense updated");
-        closeModal();
+    startSubmitTransition(async () => {
+      if (editingId) {
+        const result = await updateExpense(editingId, formData);
+        if (result.success) {
+          setExpenses((prev) =>
+            prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatCurrency(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
+          );
+          toast.success("Expense updated");
+          closeModal();
+        } else {
+          toast.error(result.error || "Failed to update expense");
+        }
       } else {
-        toast.error(result.error || "Failed to update expense");
+        const result = await createExpense(formData);
+        if (result.success) {
+          const row: ExpenseRow = {
+            id: crypto.randomUUID(),
+            category: formData.category,
+            amount: formatCurrency(n),
+            date: formData.date,
+            paymentMethod: formData.paymentMethod,
+          };
+          setExpenses((prev) => [row, ...prev]);
+          toast.success("Expense added");
+          closeModal();
+        } else {
+          toast.error(result.error || "Failed to create expense");
+        }
       }
-    } else {
-      const result = await createExpense(formData);
-      if (result.success) {
-        const row: ExpenseRow = {
-          id: crypto.randomUUID(),
-          category: formData.category,
-          amount: formatCurrency(n),
-          date: formData.date,
-          paymentMethod: formData.paymentMethod,
-        };
-        setExpenses((prev) => [row, ...prev]);
-        toast.success("Expense added");
-        closeModal();
-      } else {
-        toast.error(result.error || "Failed to create expense");
-      }
-    }
+    });
   }
 
   const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
@@ -524,15 +534,20 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  disabled={isPendingSubmit}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-zinc-900"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  disabled={isPendingSubmit}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-zinc-900 dark:disabled:hover:bg-zinc-100"
                 >
-                  {isEdit ? "Update expense" : "Save expense"}
+                  {isPendingSubmit
+                    ? (isEdit ? "Saving..." : "Adding...")
+                    : (isEdit ? "Update expense" : "Save expense")
+                  }
                 </button>
               </div>
             </form>

@@ -5,6 +5,9 @@ import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from
 import { TrashIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 type Category = {
   id: string;
@@ -124,21 +127,22 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Categories</h1>
         <form onSubmit={handleCreateCategory} className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="New category name"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           />
-          <button
+          <Button
             type="submit"
             disabled={isPendingCreate}
-            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            variant="primary"
+            className="flex items-center gap-1"
           >
             <PlusIcon size={16} />
             {isPendingCreate ? "Adding..." : "Add"}
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -151,13 +155,13 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((category) => (
-            <div key={category.id} className="border rounded-lg p-4 flex items-center justify-between bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+            <Card key={category.id} className="p-4 flex items-center justify-between">
               {editingCategoryId === category.id ? (
-                <input
+                <Input
                   type="text"
                   value={editingCategoryName}
                   onChange={(e) => setEditingCategoryName(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2 py-1 text-sm"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -203,7 +207,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
                   )}
                 </button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export type ExpenseRow = {
   id: string;
@@ -25,8 +27,8 @@ const th =
 const td =
   "px-4 py-3 text-sm text-zinc-800 tabular-nums dark:text-zinc-200";
 
-const rowActions =
-  "inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-medium transition-colors";
+// const rowActions =
+//   "inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-xs font-medium transition-colors";
 
 export function ExpensesTable({
   expenses,
@@ -97,9 +99,9 @@ export function ExpensesTable({
           </li>
         ) : (
           paginatedExpenses.map((row) => (
-            <li
+            <Card
               key={row.id}
-              className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10"
+              className="p-4 ring-1 ring-zinc-950/5 dark:ring-white/10"
             >
             <div className="flex items-start justify-between gap-3">
               <p className="font-medium text-zinc-900 dark:text-zinc-50">
@@ -130,31 +132,33 @@ export function ExpensesTable({
             {showRowActions ? (
               <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
                 {onEdit ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onEdit(row)}
-                    className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800`}
+                    variant="secondary"
+                    size="sm"
                   >
                     Edit
-                  </button>
+                  </Button>
                 ) : null}
                 {onDelete ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onDelete(row)}
-                    className={`${rowActions} border border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/40`}
+                    variant="danger"
+                    size="sm"
                   >
                     Delete
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ) : null}
-          </li>
+          </Card>
         ))
         )}
       </ul>
 
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10">
+      <Card className="hidden sm:block overflow-hidden ring-1 ring-zinc-950/5 dark:ring-white/10">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px] border-collapse text-left">
             <thead>
@@ -223,22 +227,24 @@ export function ExpensesTable({
                       <td className={`${td} text-right`}>
                         <div className="flex flex-wrap justify-end gap-1.5">
                           {onEdit ? (
-                            <button
+                            <Button
                               type="button"
                               onClick={() => onEdit(row)}
-                              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800`}
+                              variant="secondary"
+                              size="sm"
                             >
                               Edit
-                            </button>
+                            </Button>
                           ) : null}
                           {onDelete ? (
-                            <button
+                            <Button
                               type="button"
                               onClick={() => onDelete(row)}
-                              className={`${rowActions} border border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/40`}
+                              variant="danger"
+                              size="sm"
                             >
                               Delete
-                            </button>
+                            </Button>
                           ) : null}
                         </div>
                       </td>
@@ -249,7 +255,7 @@ export function ExpensesTable({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-4 pt-2">
@@ -259,22 +265,24 @@ export function ExpensesTable({
             {expenses.length} expenses
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:disabled:hover:bg-zinc-950`}
+              variant="secondary"
+              size="sm"
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className={`${rowActions} border border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50 disabled:opacity-50 disabled:hover:bg-white dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:disabled:hover:bg-zinc-950`}
+              variant="secondary"
+              size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}

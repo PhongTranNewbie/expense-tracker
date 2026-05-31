@@ -17,6 +17,7 @@ import {
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import { ReportsData } from "@/lib/stats";
 import { formatCurrency } from "@/lib/formatters";
+import { Card } from "@/components/ui/card";
 
 interface ReportsViewProps {
   data: ReportsData;
@@ -41,21 +42,21 @@ export function ReportsView({ data }: ReportsViewProps) {
     <div className="space-y-6">
       {/* KPI Stats Panel */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-6">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">This Month Expenses</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatCurrency(stats.currentMonthTotal)}
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-6">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month Expenses</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatCurrency(stats.lastMonthTotal)}
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <Card className="p-6">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Month-over-Month Trend</p>
           <div className="mt-2 flex items-center gap-2">
             <span className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -69,7 +70,7 @@ export function ReportsView({ data }: ReportsViewProps) {
               <Minus className="h-6 w-6 text-zinc-400" />
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Main Analytical Charts Grid */}
@@ -138,13 +139,13 @@ interface ChartCardProps {
 
 function ChartCard({ title, description, children }: ChartCardProps) {
   return (
-    <div className="flex flex-col rounded-2xl border bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <Card className="flex flex-col p-6">
       <div>
         <h3 className="font-semibold leading-none tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h3>
         <p className="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">{description}</p>
       </div>
       <div className="mt-6 flex-1 flex flex-col justify-center">{children}</div>
-    </div>
+    </Card>
   );
 }
 

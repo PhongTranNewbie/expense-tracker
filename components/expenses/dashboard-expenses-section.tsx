@@ -7,6 +7,9 @@ import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expen
 import { getCategoriesAction } from "@/app/actions/categories";
 import { formatCurrency } from "@/lib/formatters";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 const PAYMENT_OPTIONS = [
   "Credit card",
@@ -281,7 +284,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
   return (
     <>
       <div className="space-y-3">
-        <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/90 p-4 shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-950/40 dark:ring-white/10 sm:p-5">
+        <Card className="bg-zinc-50/90 p-4 ring-1 ring-zinc-950/5 dark:bg-zinc-950/40 dark:ring-white/10 sm:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
             <div className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
               <div>
@@ -291,13 +294,12 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                 >
                   Search
                 </label>
-                <input
+                <Input
                   id="expense-search"
                   type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Category or payment method"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-500"
                 />
               </div>
               <div>
@@ -352,20 +354,20 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
               of {expenses.length}
             </p>
           ) : null}
-        </div>
+        </Card>
 
         <ExpensesTable
           expenses={displayedExpenses}
           onEdit={openEditModal}
           onDelete={openDeleteConfirm}
           actions={
-            <button
+            <Button
               type="button"
               onClick={openAddModal}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               Add expense
-            </button>
+            </Button>
           }
         />
         {expenses.length > 0 && displayedExpenses.length === 0 ? (
@@ -468,7 +470,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                   >
                     Amount
                   </label>
-                  <input
+                  <Input
                     id="expense-amount"
                     type="text"
                     inputMode="decimal"
@@ -479,7 +481,6 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                       if (errors.amount)
                         setErrors((o) => ({ ...o, amount: undefined }));
                     }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
                     placeholder="0.00"
                   />
                   {errors.amount ? (
@@ -496,7 +497,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                   >
                     Date
                   </label>
-                  <input
+                  <Input
                     id="expense-date"
                     type="date"
                     value={date}
@@ -505,7 +506,6 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
                       if (errors.date)
                         setErrors((o) => ({ ...o, date: undefined }));
                     }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none ring-zinc-400/30 focus:border-zinc-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:[color-scheme:dark] dark:focus:border-zinc-500"
                   />
                   {errors.date ? (
                     <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">
@@ -549,24 +549,24 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
               </div>
 
               <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
+                <Button
                   type="button"
                   onClick={closeModal}
                   disabled={isPendingSubmit}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-zinc-900"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={isPendingSubmit}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-zinc-900 dark:disabled:hover:bg-zinc-100"
+                  className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
                 >
                   {isPendingSubmit
                     ? (isEdit ? "Saving..." : "Adding...")
                     : (isEdit ? "Update expense" : "Save expense")
                   }
-                </button>
+                </Button>
               </div>
             </form>
           </div>

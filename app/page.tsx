@@ -4,7 +4,7 @@ import { getExpenses } from "@/lib/expenses";
 import { getDashboardStats } from "@/lib/stats";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
-export default async function Home() {
+export default async function Home() {  
   const [dbExpenses, stats] = await Promise.all([
     getExpenses(),
     getDashboardStats(),

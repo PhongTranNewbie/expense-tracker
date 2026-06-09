@@ -1,3 +1,11 @@
+> Historical note:
+> This architecture review was written on 2026-05-26 and is no longer fully current.
+> Several findings have already been resolved, including expense action refactoring,
+> removal of redundant report logic, dashboard/expenses separation, shared formatters,
+> UI primitives, Zod validation, and error boundaries.
+>
+> For current guidance, use `AGENTS.md`, `PROJECT_CONTEXT.md`, and `ARCHITECTURE_STATUS.md`.
+
 # Architecture Consistency Review
 **Project:** Expense Tracker  
 **Date:** 2026-05-26  
@@ -124,9 +132,37 @@ const initialExpenses = dbExpenses.map((e) => ({
 ### 📋 **Recommended Standard**
 
 ```
-lib/*           → Pure database queries (read/write)
-                → No validation, no revalidation
-                → Throws errors for caller to handle
+lib/*          
+Shared logic layer.
+
+Different files inside `lib/` have different responsibilities:
+
+- `lib/[resource].ts`
+  - Resource data access modules, e.g. `lib/expenses.ts`, `lib/categories.ts`
+  - Prisma usage is allowed here
+  - Accept flat DTO-style inputs
+  - No Zod validation
+  - No `revalidatePath`
+  - No UI logic
+
+- `lib/stats.ts`
+  - Server-side aggregation and analytics
+  - Prisma usage is allowed here
+  - Returns serialization-safe report/dashboard data
+
+- `lib/validations/*`
+  - Zod validation schemas
+  - Inferred TypeScript validation types
+  - No Prisma usage
+  - No database calls
+  - No `revalidatePath`
+  - No UI logic
+
+- `lib/formatters.ts`
+  - Pure formatting helpers
+
+- `lib/utils.ts`
+  - Generic helper utilities
                 
 actions/*       → Server actions ("use server")
                 → Input validation

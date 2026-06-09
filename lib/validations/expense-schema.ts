@@ -39,19 +39,13 @@ const baseExpenseSchema = z.object({
 
 /**
  * Schema for creating a new expense
- * Includes optional legacy 'category' field for UI compatibility
  */
-export const createExpenseSchema = baseExpenseSchema.extend({
-  category: z.string().optional(), // Legacy field for UI compatibility
-});
+export const createExpenseSchema = baseExpenseSchema;
 
 /**
  * Schema for updating an existing expense
- * Includes optional legacy 'category' field for UI compatibility
  */
-export const updateExpenseSchema = baseExpenseSchema.extend({
-  category: z.string().optional(), // Legacy field for UI compatibility
-});
+export const updateExpenseSchema = baseExpenseSchema;
 
 /**
  * Type inference for create expense input

@@ -200,8 +200,8 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
       return;
     }
     
+    const categoryName = category.trim();
     const formData = {
-      category: category.trim(),
       categoryId: selectedCategory.id,
       amount: n,
       date,
@@ -213,7 +213,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
         const result = await updateExpense(editingId, formData);
         if (result.success) {
           setExpenses((prev) =>
-            prev.map((r) => (r.id === editingId ? { ...r, category: formData.category, amount: formatCurrency(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
+            prev.map((r) => (r.id === editingId ? { ...r, category: categoryName, amount: formatCurrency(n), date: formData.date, paymentMethod: formData.paymentMethod } : r)),
           );
           toast.success("Expense updated");
           closeModal();
@@ -225,7 +225,7 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
         if (result.success) {
           const row: ExpenseRow = {
             id: crypto.randomUUID(),
-            category: formData.category,
+            category: categoryName,
             amount: formatCurrency(n),
             date: formData.date,
             paymentMethod: formData.paymentMethod,

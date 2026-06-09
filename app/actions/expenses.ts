@@ -2,20 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import * as dbLayer from "@/lib/expenses";
-import { createExpenseSchema, updateExpenseSchema } from "@/lib/validations/expense-schema";
+import {
+  createExpenseSchema,
+  updateExpenseSchema,
+  type CreateExpenseInput,
+  type UpdateExpenseInput,
+} from "@/lib/validations/expense-schema";
 
 /**
  * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
  * Manages mutations, data stabilization, and UI cache revalidation.
  */
 
-export async function createExpense(formData: {
-  category: string;     // Legacy field for UI compatibility
-  categoryId: string;   // Standard category ID
-  amount: number;
-  date: string;
-  paymentMethod: string;
-}) {
+export async function createExpense(formData: CreateExpenseInput) {
   try {
     // Validate input using Zod schema
     const validation = createExpenseSchema.safeParse(formData);
@@ -48,13 +47,7 @@ export async function createExpense(formData: {
 
 export async function updateExpense(
   id: string,
-  formData: {
-    category: string;
-    categoryId: string;
-    amount: number;
-    date: string;
-    paymentMethod: string;
-  }
+  formData: UpdateExpenseInput
 ) {
   try {
     // Validate expense ID

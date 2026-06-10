@@ -1,9 +1,13 @@
 import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
+import { getCategories } from "@/lib/categories";
 import { getExpenses } from "@/lib/expenses";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
 export default async function ExpensesPage() {
-  const dbExpenses = await getExpenses();
+  const [dbExpenses, initialCategories] = await Promise.all([
+    getExpenses(),
+    getCategories(),
+  ]);
 
   const initialExpenses = dbExpenses.map((e) => ({
     id: e.id,
@@ -23,7 +27,11 @@ export default async function ExpensesPage() {
           Manage your expenses, add new entries, and track your spending.
         </p>
       </div>
-      <DashboardExpensesSection key={JSON.stringify(initialExpenses)} initialExpenses={initialExpenses} />
+      <DashboardExpensesSection
+        key={JSON.stringify(initialExpenses)}
+        initialExpenses={initialExpenses}
+        initialCategories={initialCategories}
+      />
     </div>
   );
 }

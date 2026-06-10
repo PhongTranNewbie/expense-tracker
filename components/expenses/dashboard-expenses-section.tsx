@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState, useTransition, type FormEven
 import { ExpensesTable, type ExpenseRow } from "@/components/expenses/expenses-table";
 import { toast } from "sonner";
 import { createExpense, updateExpense, deleteExpense } from "@/app/actions/expenses";
-import { getCategoriesAction } from "@/app/actions/categories";
 import { formatCurrency } from "@/lib/formatters";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,16 @@ const PAYMENT_OPTIONS = [
 type FormErrors = Partial<
   Record<"category" | "amount" | "date" | "paymentMethod", string>
 >;
+
+type CategoryOption = {
+  id: string;
+  name: string;
+};
+
+type DashboardExpensesSectionProps = {
+  initialExpenses?: ExpenseRow[];
+  initialCategories?: CategoryOption[];
+};
 
 /** Parse stored display amount (e.g. "$124.50") for the amount input */
 function amountForInput(displayAmount: string): string {
@@ -66,15 +75,18 @@ function parseAmountForSort(display: string): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?: ExpenseRow[] } = {}) {
+export function DashboardExpensesSection({
+  initialExpenses,
+  initialCategories = [],
+}: DashboardExpensesSectionProps = {}) {
   const [expenses, setExpenses] = useState<ExpenseRow[]>(() =>
     initialExpenses ? [...initialExpenses] : []
   );
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const categories = initialCategories;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(() => categories[0]?.name ?? "");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>(
@@ -95,29 +107,6 @@ export function DashboardExpensesSection({ initialExpenses }: { initialExpenses?
 
   const isEdit = editingId !== null;
 
-  // Load categories when component mounts
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const result = await getCategoriesAction();
-        
-        // Kiểm tra an toàn: Có kết quả trả về và chứa mảng data hợp lệ
-        if (result && result.data && Array.isArray(result.data)) {
-          setCategories(result.data);
-          
-          // Đặt danh mục đầu tiên làm mặc định nếu có
-          if (result.data.length > 0 && !category) {
-            setCategory(result.data[0].name);
-          } 
-        } else {
-            console.error("Failed to load categories:", result.error);
-          }
-      } catch (error) {
-        console.error("Failed to load categories in dashboard:", error);
-      }
-    }
-    loadCategories();
-  }, []); // Thêm category vào dependency nếu hook có sử dụng trạng thái của nó
 
   const resetForm = useCallback(() => {
     setCategory(categories.length > 0 ? categories[0].name : "");

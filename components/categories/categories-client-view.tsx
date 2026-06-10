@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type Category = {
   id: string;
@@ -147,11 +148,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
       </div>
 
       {categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50/50 py-12 text-center dark:border-zinc-800 dark:bg-zinc-900/30">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            No categories yet. Create your first category above.
-          </p>
-        </div>
+        <EmptyState title="No categories yet. Create your first category above." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((category) => (

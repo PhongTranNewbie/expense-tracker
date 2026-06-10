@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type ExpenseRow = {
   id: string;
@@ -92,10 +93,12 @@ export function ExpensesTable({
             </li>
           ))
         ) : expenses.length === 0 ? (
-          <li className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 py-12 text-center dark:border-zinc-800 dark:bg-zinc-950/30">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No expenses found.
-            </p>
+          <li>
+            <EmptyState
+              title="No expenses found."
+              className="rounded-2xl border-zinc-200 bg-zinc-50/50 dark:bg-zinc-950/30"
+              titleClassName="text-zinc-500 dark:text-zinc-400"
+            />
           </li>
         ) : (
           paginatedExpenses.map((row) => (
@@ -204,9 +207,11 @@ export function ExpensesTable({
                     colSpan={showRowActions ? 5 : 4}
                     className="py-12 text-center"
                   >
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      No expenses found.
-                    </p>
+                    <EmptyState
+                      title="No expenses found."
+                      className="border-0 bg-transparent py-0 dark:bg-transparent"
+                      titleClassName="text-zinc-500 dark:text-zinc-400"
+                    />
                   </td>
                 </tr>
               ) : (

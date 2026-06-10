@@ -98,13 +98,3 @@ export async function deleteCategoryAction(id: string) {
     return { success: false, error: "Failed to delete category due to a system error" };
   }
 }
-
-export async function getCategoriesAction() {
-  try {
-    const data = await dbLayer.getCategories();
-    return { success: true, data };
-  } catch (error) {
-    console.error("Failed to fetch categories via action:", error);
-    return { success: false, data: [], error: "Failed to fetch categories" };
-  }
-}

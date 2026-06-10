@@ -1,4 +1,4 @@
-import { DashboardExpensesSection } from "@/components/expenses/dashboard-expenses-section";
+import { ExpensesManagementSection } from "@/components/expenses/expenses-management-section";
 import { getCategories } from "@/lib/categories";
 import { getExpenses } from "@/lib/expenses";
 import { formatCurrency, formatDate } from "@/lib/formatters";
@@ -27,7 +27,7 @@ export default async function ExpensesPage() {
           Manage your expenses, add new entries, and track your spending.
         </p>
       </div>
-      <DashboardExpensesSection
+      <ExpensesManagementSection
         key={JSON.stringify(initialExpenses)}
         initialExpenses={initialExpenses}
         initialCategories={initialCategories}

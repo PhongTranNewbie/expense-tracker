@@ -27,7 +27,7 @@ type CategoryOption = {
   name: string;
 };
 
-type DashboardExpensesSectionProps = {
+type ExpensesManagementSectionProps = {
   initialExpenses?: ExpenseRow[];
   initialCategories?: CategoryOption[];
 };
@@ -75,10 +75,10 @@ function parseAmountForSort(display: string): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
-export function DashboardExpensesSection({
+export function ExpensesManagementSection({
   initialExpenses,
   initialCategories = [],
-}: DashboardExpensesSectionProps = {}) {
+}: ExpensesManagementSectionProps = {}) {
   const [expenses, setExpenses] = useState<ExpenseRow[]>(() =>
     initialExpenses ? [...initialExpenses] : []
   );
@@ -232,7 +232,7 @@ export function DashboardExpensesSection({
   const paymentKnown = PAYMENT_OPTIONS.some((p) => p === paymentMethod);
 
   const categoryOptions = useMemo(() => {
-    // Lấy trực tiếp tên từ danh sách categories đã fetch từ API
+    // Build category filter options from the server-provided categories.
     const names = categories.map((c) => c.name);
     return names.sort((a, b) => a.localeCompare(b));
   }, [categories]);

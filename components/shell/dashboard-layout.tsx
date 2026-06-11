@@ -28,7 +28,15 @@ function navActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+interface DashboardLayoutProps {
+  children: React.ReactNode;
+  authControls?: React.ReactNode;
+}
+
+export function DashboardLayout({
+  children,
+  authControls,
+}: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -111,6 +119,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <h1 className="truncate text-base font-semibold">{title}</h1>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            {authControls}
           </div>
         </header>
 

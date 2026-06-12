@@ -22,18 +22,35 @@ const paymentMethods = [
   "Cash",
 ];
 
-async function main() {
-  console.log("🌱 Starting seed...");
+const demoUser = {
+  email: "demo@example.com",
+  name: "Demo User",
+};
 
-  // Clear old data
+async function main() {
+  console.log("Starting seed...");
+
+  // Clear old demo data.
   await prisma.expense.deleteMany();
   await prisma.category.deleteMany();
 
-  // Create categories
+  const user = await prisma.user.upsert({
+    where: {
+      email: demoUser.email,
+    },
+    update: {
+      name: demoUser.name,
+    },
+    create: demoUser,
+  });
+
   const categories = await Promise.all(
     categoryNames.map((name) =>
       prisma.category.create({
-        data: { name },
+        data: {
+          name,
+          userId: user.id,
+        },
       })
     )
   );
@@ -41,7 +58,7 @@ async function main() {
   const expenses = [];
   const now = new Date();
 
-  // Generate expenses for last 4 months
+  // Generate expenses for the last 4 months.
   for (let monthOffset = 0; monthOffset < 4; monthOffset++) {
     const currentMonth = new Date(
       now.getFullYear(),
@@ -56,9 +73,7 @@ async function main() {
         categories[Math.floor(Math.random() * categories.length)];
 
       const randomPaymentMethod =
-        paymentMethods[
-          Math.floor(Math.random() * paymentMethods.length)
-        ];
+        paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
 
       const randomDay = Math.floor(Math.random() * 28) + 1;
 
@@ -73,6 +88,7 @@ async function main() {
         date: expenseDate,
         paymentMethod: randomPaymentMethod,
         categoryId: randomCategory.id,
+        userId: user.id,
       });
     }
   }
@@ -81,13 +97,14 @@ async function main() {
     data: expenses,
   });
 
-  console.log(`✅ Created ${categories.length} categories`);
-  console.log(`✅ Created ${expenses.length} expenses`);
+  console.log(`Seeded demo user: ${user.email}`);
+  console.log(`Created ${categories.length} categories`);
+  console.log(`Created ${expenses.length} expenses`);
 }
 
 main()
   .catch((error) => {
-    console.error("❌ Seed failed");
+    console.error("Seed failed");
     console.error(error);
     process.exit(1);
   })

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 import * as dbLayer from "@/lib/expenses";
 import {
   createExpenseSchema,
@@ -13,9 +14,19 @@ import {
  * Server Actions Layer acting as the secure bridge between Client UI and Database Layer.
  * Manages mutations, data stabilization, and UI cache revalidation.
  */
+async function getCurrentUserId() {
+  const session = await auth();
+  return session?.user?.id;
+}
 
 export async function createExpense(formData: CreateExpenseInput) {
   try {
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     // Validate input using Zod schema
     const validation = createExpenseSchema.safeParse(formData);
     
@@ -28,7 +39,7 @@ export async function createExpense(formData: CreateExpenseInput) {
 
     // Call the underlying database operation from lib
     // ✅ CORRECT: Passing flat data, no Prisma relation syntax
-    await dbLayer.createExpense({
+    await dbLayer.createExpense(userId, {
       categoryId: validatedData.categoryId,
       amount: validatedData.amount,
       date: new Date(validatedData.date),
@@ -50,6 +61,12 @@ export async function updateExpense(
   formData: UpdateExpenseInput
 ) {
   try {
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     // Validate expense ID
     if (!id) return { success: false, error: "Expense ID is required" };
 
@@ -64,7 +81,7 @@ export async function updateExpense(
     const validatedData = validation.data;
 
     // ✅ CORRECT: Passing flat data, no Prisma relation syntax
-    await dbLayer.updateExpense(id, {
+    await dbLayer.updateExpense(userId, id, {
       categoryId: validatedData.categoryId,
       amount: validatedData.amount,
       date: new Date(validatedData.date),
@@ -82,9 +99,15 @@ export async function updateExpense(
 
 export async function deleteExpense(id: string) {
   try {
+    const userId = await getCurrentUserId();
+
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     if (!id) return { success: false, error: "Expense ID is required" };
 
-    await dbLayer.deleteExpense(id);
+    await dbLayer.deleteExpense(userId, id);
 
     revalidatePath("/");
     revalidatePath("/reports");

@@ -15,6 +15,8 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  categories    Category[]
+  expenses      Expense[]
 }
 
 model Account {
@@ -62,14 +64,21 @@ model Expense {
   categoryId    String
   category      Category @relation(fields: [categoryId], references: [id])
 
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
 model Category {
   id       String    @id @default(cuid())
-  name     String    @unique
+  name     String
   expenses Expense[]
 
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
   @@map("categories")
 }

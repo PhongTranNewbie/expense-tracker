@@ -1,9 +1,19 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { ExpensesManagementSection } from "@/components/expenses/expenses-management-section";
 import { getCategories } from "@/lib/categories";
 import { getExpenses } from "@/lib/expenses";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
+export const dynamic = "force-dynamic";
+
 export default async function ExpensesPage() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const [dbExpenses, initialCategories] = await Promise.all([
     getExpenses(),
     getCategories(),

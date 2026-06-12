@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getCategories } from "@/lib/categories";
 import { CategoriesClientView } from "@/components/categories/categories-client-view";
 
@@ -5,8 +7,16 @@ export const metadata = {
   title: "Manage Categories | MoneyVis",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function CategoriesPage() {
   // Lấy dữ liệu trực tiếp từ DB ngay trên Server khi người dùng vừa tải trang
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const initialCategories = await getCategories();
 
   return (

@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getReportsData } from "@/lib/stats";
 import { ReportsView } from "@/components/reports/reports-view";
 
@@ -6,7 +8,15 @@ export const metadata = {
   description: "Analyze your monthly spending trends and category distribution.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ReportsPage() {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   // Fetch fully pre-aggregated data safely on the server side
   const reportsData = await getReportsData();
 

@@ -5,9 +5,12 @@ import { prisma } from "./db";
  * No edge-case handling for UI, no caching revalidation.
  */
 
-export async function getExpenses() {
+export async function getExpenses(userId: string) {
   try {
     const expenses = await prisma.expense.findMany({
+      where: {
+        userId,
+      },
       include: {
         category: true,
       },
@@ -22,10 +25,13 @@ export async function getExpenses() {
   }
 }
 
-export async function getExpenseById(id: string) {
+export async function getExpenseById(userId: string, id: string) {
   try {
-    const expense = await prisma.expense.findUnique({
-      where: { id },
+    const expense = await prisma.expense.findFirst({
+      where: {
+        id,
+        userId,
+      },
       include: {
         category: true,
       },
@@ -44,14 +50,32 @@ interface ExpenseData {
   paymentMethod: string;
 }
 
-export async function createExpense(data: ExpenseData) {
+async function verifyCategoryOwnership(userId: string, categoryId: string) {
+  const category = await prisma.category.findFirst({
+    where: {
+      id: categoryId,
+      userId,
+    },
+  });
+
+  if (!category) {
+    throw new Error("Category not found");
+  }
+
+  return category;
+}
+
+export async function createExpense(userId: string, data: ExpenseData) {
   try {
+    await verifyCategoryOwnership(userId, data.categoryId);
+
     return await prisma.expense.create({
       data: {
         amount: data.amount,
         date: data.date,
         paymentMethod: data.paymentMethod,
         categoryId: data.categoryId,
+        userId,
       },
     });
   } catch (error) {
@@ -60,15 +84,34 @@ export async function createExpense(data: ExpenseData) {
   }
 }
 
-export async function updateExpense(id: string, data: ExpenseData) {
+export async function updateExpense(userId: string, id: string, data: ExpenseData) {
   try {
-    return await prisma.expense.update({
-      where: { id },
+    await verifyCategoryOwnership(userId, data.categoryId);
+
+    const result = await prisma.expense.updateMany({
+      where: {
+        id,
+        userId,
+      },
       data: {
         amount: data.amount,
         date: data.date,
         paymentMethod: data.paymentMethod,
         categoryId: data.categoryId,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new Error("Expense not found");
+    }
+
+    return await prisma.expense.findFirstOrThrow({
+      where: {
+        id,
+        userId,
+      },
+      include: {
+        category: true,
       },
     });
   } catch (error) {
@@ -77,11 +120,22 @@ export async function updateExpense(id: string, data: ExpenseData) {
   }
 }
 
-export async function deleteExpense(id: string) {
+export async function deleteExpense(userId: string, id: string) {
   try {
-    return await prisma.expense.delete({
-      where: { id },
+    const expense = await prisma.expense.findFirstOrThrow({
+      where: {
+        id,
+        userId,
+      },
     });
+
+    await prisma.expense.delete({
+      where: {
+        id: expense.id,
+      },
+    });
+
+    return expense;
   } catch (error) {
     console.error("Database error in deleteExpense:", error);
     throw error;

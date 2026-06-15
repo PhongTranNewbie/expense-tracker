@@ -4,7 +4,7 @@ import { getReportsData } from "@/lib/stats";
 import { ReportsView } from "@/components/reports/reports-view";
 
 export const metadata = {
-  title: "Financial Reports | MoneyVis",
+  title: "Financial Reports",
   description: "Analyze your monthly spending trends and category distribution.",
 };
 

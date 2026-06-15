@@ -4,7 +4,7 @@ import { ensureDefaultCategories, getCategories } from "@/lib/categories";
 import { CategoriesClientView } from "@/components/categories/categories-client-view";
 
 export const metadata = {
-  title: "Manage Categories | MoneyVis",
+  title: "Manage Categories",
 };
 
 export const dynamic = "force-dynamic";

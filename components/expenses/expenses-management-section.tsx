@@ -211,9 +211,9 @@ export function ExpensesManagementSection({
         }
       } else {
         const result = await createExpense(formData);
-        if (result.success) {
+        if (result.success && result.data) {
           const row: ExpenseRow = {
-            id: crypto.randomUUID(),
+            id: result.data.id,
             category: categoryName,
             amount: formatCurrency(n),
             date: formData.date,

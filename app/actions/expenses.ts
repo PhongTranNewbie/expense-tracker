@@ -39,7 +39,7 @@ export async function createExpense(formData: CreateExpenseInput) {
 
     // Call the underlying database operation from lib
     // ✅ CORRECT: Passing flat data, no Prisma relation syntax
-    await dbLayer.createExpense(userId, {
+    const expense = await dbLayer.createExpense(userId, {
       categoryId: validatedData.categoryId,
       amount: validatedData.amount,
       date: new Date(validatedData.date),
@@ -49,7 +49,7 @@ export async function createExpense(formData: CreateExpenseInput) {
     // Clear next.js path cache to reflect changes immediately on UI
     revalidatePath("/");
     revalidatePath("/reports");
-    return { success: true };
+    return { success: true, data: expense };
   } catch (error) {
     console.error("Server Action Error [createExpense]:", error);
     return { success: false, error: "Failed to create expense" };

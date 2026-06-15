@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getCategories } from "@/lib/categories";
+import { ensureDefaultCategories, getCategories } from "@/lib/categories";
 import { CategoriesClientView } from "@/components/categories/categories-client-view";
 
 export const metadata = {
@@ -17,6 +17,8 @@ export default async function CategoriesPage() {
   if (!userId) {
     redirect("/login");
   }
+
+  await ensureDefaultCategories(userId);
 
   const initialCategories = await getCategories(userId);
 

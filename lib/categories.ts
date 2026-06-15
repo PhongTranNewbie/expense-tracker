@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/db";
 
+const defaultCategoryNames = [
+  "Food",
+  "Transport",
+  "Shopping",
+  "Bills",
+  "Entertainment",
+  "Health",
+  "Other",
+];
+
 /**
  * Pure Database Queries Layer for Categories.
  * No edge-case handling for UI, no caching revalidation.
@@ -23,6 +33,30 @@ export async function getCategories(userId: string) {
 
 interface CategoryData {
   name: string;
+}
+
+export async function ensureDefaultCategories(userId: string) {
+  try {
+    const categoryCount = await prisma.category.count({
+      where: {
+        userId,
+      },
+    });
+
+    if (categoryCount > 0) {
+      return;
+    }
+
+    await prisma.category.createMany({
+      data: defaultCategoryNames.map((name) => ({
+        name,
+        userId,
+      })),
+    });
+  } catch (error) {
+    console.error("Database error in ensureDefaultCategories:", error);
+    throw error;
+  }
 }
 
 export async function createCategory(userId: string, data: CategoryData) {

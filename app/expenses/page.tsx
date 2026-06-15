@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ExpensesManagementSection } from "@/components/expenses/expenses-management-section";
-import { getCategories } from "@/lib/categories";
+import { ensureDefaultCategories, getCategories } from "@/lib/categories";
 import { getExpenses } from "@/lib/expenses";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
@@ -14,6 +14,8 @@ export default async function ExpensesPage() {
   if (!userId) {
     redirect("/login");
   }
+
+  await ensureDefaultCategories(userId);
 
   const [dbExpenses, initialCategories] = await Promise.all([
     getExpenses(userId),

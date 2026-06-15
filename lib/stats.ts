@@ -129,7 +129,7 @@ export interface DashboardStats {
  * Fetches dashboard summary statistics for the current month.
  * Calculates expenses, trends, and top spending category.
  */
-export async function getDashboardStats(): Promise<DashboardStats> {
+export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const now = new Date();
   const currentMonthStart = startOfMonth(now);
   const currentMonthEnd = endOfMonth(now);
@@ -139,6 +139,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Fetch current month expenses
   const currentMonthExpenses = await prisma.expense.findMany({
     where: {
+      userId,
       date: {
         gte: currentMonthStart,
         lte: currentMonthEnd,
@@ -156,6 +157,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Fetch last month expenses
   const lastMonthExpenses = await prisma.expense.findMany({
     where: {
+      userId,
       date: {
         gte: lastMonthStart,
         lte: lastMonthEnd,

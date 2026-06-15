@@ -10,14 +10,15 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const session = await auth();
+  const userId = session?.user?.id;
 
-  if (!session?.user) {
+  if (!userId) {
     redirect("/login");
   }
 
   const [dbExpenses, stats] = await Promise.all([
-    getExpenses(),
-    getDashboardStats(),
+    getExpenses(userId),
+    getDashboardStats(userId),
   ]);
 
   // Build summary cards with real data

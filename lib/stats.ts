@@ -26,7 +26,7 @@ export interface ReportsData {
  * Fetches and aggregates expense data for reports on the server side.
  * Reduces client-side computational overhead and solves serialization issues.
  */
-export async function getReportsData(): Promise<ReportsData> {
+export async function getReportsData(userId: string): Promise<ReportsData> {
   const now = new Date();
   
   // Calculate the starting point for a rolling 6-month window
@@ -37,6 +37,7 @@ export async function getReportsData(): Promise<ReportsData> {
   // Fetch only the raw records falling within the 6-month window
   const expenses = await prisma.expense.findMany({
     where: {
+      userId,
       date: {
         gte: sixMonthsAgo,
         lte: endOfMonth(now),

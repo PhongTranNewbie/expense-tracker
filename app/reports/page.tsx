@@ -12,13 +12,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const session = await auth();
+  const userId = session?.user?.id;
 
-  if (!session?.user) {
+  if (!userId) {
     redirect("/login");
   }
 
   // Fetch fully pre-aggregated data safely on the server side
-  const reportsData = await getReportsData();
+  const reportsData = await getReportsData(userId);
 
   return (
     <div className="mx-auto max-w-6xl space-y-2 pb-6">

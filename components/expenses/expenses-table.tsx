@@ -17,6 +17,9 @@ type ExpensesTableProps = {
   expenses: ExpenseRow[];
   isLoading?: boolean;
   title?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: ReactNode;
   /** e.g. primary actions shown next to the section title */
   actions?: ReactNode;
   onEdit?: (row: ExpenseRow) => void;
@@ -35,6 +38,9 @@ export function ExpensesTable({
   expenses,
   isLoading = false,
   title = "Recent expenses",
+  emptyTitle = "No expenses yet",
+  emptyDescription = "Add your first expense to start tracking spending.",
+  emptyAction,
   actions,
   onEdit,
   onDelete,
@@ -95,7 +101,9 @@ export function ExpensesTable({
         ) : expenses.length === 0 ? (
           <li>
             <EmptyState
-              title="No expenses found."
+              title={emptyTitle}
+              description={emptyDescription}
+              action={emptyAction}
               className="rounded-2xl border-zinc-200 bg-zinc-50/50 dark:bg-zinc-950/30"
               titleClassName="text-zinc-500 dark:text-zinc-400"
             />
@@ -208,7 +216,9 @@ export function ExpensesTable({
                     className="py-12 text-center"
                   >
                     <EmptyState
-                      title="No expenses found."
+                      title={emptyTitle}
+                      description={emptyDescription}
+                      action={emptyAction}
                       className="border-0 bg-transparent py-0 dark:bg-transparent"
                       titleClassName="text-zinc-500 dark:text-zinc-400"
                     />

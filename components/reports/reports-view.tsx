@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -78,7 +79,10 @@ export function ReportsView({ data }: ReportsViewProps) {
         {/* Monthly Trend Analytics */}
         <ChartCard title="Monthly Spending" description="Evolution of overall expenses over the last 6 months.">
           {!hasMonthlyData ? (
-            <EmptyChartState message="No historical expense records available for this period." />
+            <EmptyChartState
+              message="Add an expense to start building your monthly trend."
+              actionLabel="Add expense"
+            />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthlySeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -101,7 +105,10 @@ export function ReportsView({ data }: ReportsViewProps) {
         {/* Category Breakdown Analytics */}
         <ChartCard title="Category Breakdown" description="Distribution of current month expenses across active categories.">
           {!hasCategoryData ? (
-            <EmptyChartState message="No expense entries posted for the current calendar month." />
+            <EmptyChartState
+              message="Add this month's expenses to see your category breakdown."
+              actionLabel="Add expense"
+            />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -149,11 +156,25 @@ function ChartCard({ title, description, children }: ChartCardProps) {
   );
 }
 
-function EmptyChartState({ message }: { message: string }) {
+function EmptyChartState({
+  message,
+  actionLabel,
+}: {
+  message: string;
+  actionLabel?: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <Info className="h-8 w-8 text-zinc-300 dark:text-zinc-700" />
       <p className="mt-2 text-sm text-zinc-400 dark:text-zinc-500">{message}</p>
+      {actionLabel ? (
+        <Link
+          href="/expenses"
+          className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          {actionLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }

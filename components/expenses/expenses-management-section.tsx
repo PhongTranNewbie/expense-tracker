@@ -349,6 +349,17 @@ export function ExpensesManagementSection({
           expenses={displayedExpenses}
           onEdit={openEditModal}
           onDelete={openDeleteConfirm}
+          emptyTitle="No expenses yet"
+          emptyDescription="Add an expense to start building your spending history."
+          emptyAction={
+            <Button
+              type="button"
+              onClick={openAddModal}
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              Add expense
+            </Button>
+          }
           actions={
             <Button
               type="button"

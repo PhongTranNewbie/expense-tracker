@@ -28,6 +28,16 @@ export function RecentExpensesPreview({ expenses }: RecentExpensesPreviewProps) 
           Manage expenses
         </Link>
       }
+      emptyTitle="No expenses yet"
+      emptyDescription="Add your first expense to see recent activity here."
+      emptyAction={
+        <Link
+          href="/expenses"
+          className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Add expense
+        </Link>
+      }
     />
   );
 }

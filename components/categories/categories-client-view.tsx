@@ -43,7 +43,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
         if (result.success && result.data) {
           setCategories([...categories, result.data]);
           setNewCategoryName("");
-          toast.success("Category created successfully");
+          toast.success("Category added");
         } else {
           toast.error(result.error || "Failed to create category");
         }
@@ -63,7 +63,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
           setCategories(categories.map(cat => cat.id === id ? { ...cat, name: name.trim() } : cat));
           setEditingCategoryId(null);
           setEditingCategoryName("");
-          toast.success("Category updated successfully");
+          toast.success("Category updated");
         } else {
           toast.error(result.error || "Failed to update category");
         }
@@ -96,7 +96,7 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
         const result = await deleteCategoryAction(id);
         if (result.success) {
           setCategories(categories.filter(category => category.id !== id));
-          toast.success("Category deleted successfully");
+          toast.success("Category deleted");
         } else {
           toast.error(result.error || "Failed to delete category");
         }

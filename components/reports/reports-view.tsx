@@ -9,14 +9,14 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
-import { ReportsData } from "@/lib/stats";
+import { CategoryPieData, ReportsData } from "@/lib/stats";
 import { formatCurrency } from "@/lib/formatters";
 import { Card } from "@/components/ui/card";
 
@@ -33,11 +33,23 @@ const formatAxisMoney = (value: number) => {
   return `$${value}`;
 };
 
+const getTrendCopy = (trend: number) => {
+  if (trend > 0) return "Spending is up from last month";
+  if (trend < 0) return "Spending is down from last month";
+  return "Spending is even with last month";
+};
+
 export function ReportsView({ data }: ReportsViewProps) {
   const { stats, monthlySeries, categoryPieData } = data;
 
   const hasMonthlyData = monthlySeries.some((m) => m.total > 0);
   const hasCategoryData = categoryPieData.length > 0;
+  const topCategory = categoryPieData[0];
+  const categoryTotal = categoryPieData.reduce((sum, item) => sum + item.value, 0);
+  const highestMonth = monthlySeries.reduce(
+    (highest, item) => (item.total > highest.total ? item : highest),
+    monthlySeries[0],
+  );
 
   return (
     <div className="space-y-6">
@@ -48,12 +60,20 @@ export function ReportsView({ data }: ReportsViewProps) {
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatCurrency(stats.currentMonthTotal)}
           </p>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            {topCategory
+              ? `${topCategory.name} leads this month`
+              : "No expenses recorded this month"}
+          </p>
         </Card>
 
         <Card className="p-6">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Month Expenses</p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {formatCurrency(stats.lastMonthTotal)}
+          </p>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Comparison baseline for the trend
           </p>
         </Card>
 
@@ -71,8 +91,35 @@ export function ReportsView({ data }: ReportsViewProps) {
               <Minus className="h-6 w-6 text-zinc-400" />
             )}
           </div>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            {getTrendCopy(stats.trend)}
+          </p>
         </Card>
       </div>
+
+      {hasMonthlyData ? (
+        <Card className="p-4">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Highest month in this view:{" "}
+            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              {highestMonth.label}
+            </span>{" "}
+            at{" "}
+            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              {formatCurrency(highestMonth.total)}
+            </span>
+            {topCategory ? (
+              <>
+                {" "}
+                • Top current category:{" "}
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                  {topCategory.name}
+                </span>
+              </>
+            ) : null}
+          </p>
+        </Card>
+      ) : null}
 
       {/* Main Analytical Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -85,7 +132,7 @@ export function ReportsView({ data }: ReportsViewProps) {
             />
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={monthlySeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={monthlySeries} margin={{ top: 16, right: 10, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
                 <XAxis dataKey="label" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis
@@ -96,7 +143,14 @@ export function ReportsView({ data }: ReportsViewProps) {
                   tickFormatter={formatAxisMoney}
                 />
                 <Tooltip content={<CustomChartTooltip />} cursor={{ fill: "#f4f4f5", opacity: 0.4 }} />
-                <Bar dataKey="total" fill={TREND_COLOR} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" fill={TREND_COLOR} radius={[6, 6, 0, 0]}>
+                  <LabelList
+                    dataKey="total"
+                    position="top"
+                    formatter={(value: number) => (value > 0 ? formatAxisMoney(value) : "")}
+                    className="fill-zinc-500 text-[11px] dark:fill-zinc-400"
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -110,28 +164,70 @@ export function ReportsView({ data }: ReportsViewProps) {
               actionLabel="Add expense"
             />
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={categoryPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {categoryPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomChartTooltip />} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px] md:items-center">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={categoryPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={92}
+                    paddingAngle={4}
+                    dataKey="value"
+                    nameKey="name"
+                  >
+                    {categoryPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomChartTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <CategoryRanking data={categoryPieData} total={categoryTotal} />
+            </div>
           )}
         </ChartCard>
       </div>
+    </div>
+  );
+}
+
+function CategoryRanking({
+  data,
+  total,
+}: {
+  data: CategoryPieData[];
+  total: number;
+}) {
+  return (
+    <div className="space-y-3">
+      {data.slice(0, 5).map((item, index) => {
+        const percent = total === 0 ? 0 : Math.round((item.value / total) * 100);
+
+        return (
+          <div key={item.name} className="space-y-1">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  aria-hidden="true"
+                />
+                <span className="truncate font-medium text-zinc-700 dark:text-zinc-200">
+                  {item.name}
+                </span>
+              </div>
+              <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                {percent}%
+              </span>
+            </div>
+            <p className="pl-4 text-xs text-zinc-500 dark:text-zinc-400">
+              {formatCurrency(item.value)}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

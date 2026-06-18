@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createCategoryAction, updateCategoryAction, deleteCategoryAction } from "@/app/actions/categories";
-import { TrashIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, TrashIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -124,24 +124,36 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Categories</h1>
-        <form onSubmit={handleCreateCategory} className="flex gap-2">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            Categories
+          </h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Organize expenses with categories you can reuse.
+          </p>
+        </div>
+        <form onSubmit={handleCreateCategory} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label className="sr-only" htmlFor="new-category-name">
+            New category name
+          </label>
           <Input
+            id="new-category-name"
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder="New category name"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            className="w-full sm:w-56"
           />
           <Button
             type="submit"
             disabled={isPendingCreate}
             variant="primary"
-            className="flex items-center gap-1"
+            className="gap-1"
+            aria-label={isPendingCreate ? "Adding category" : "Add category"}
           >
-            <PlusIcon size={16} />
+            <PlusIcon size={16} aria-hidden="true" />
             {isPendingCreate ? "Adding..." : "Add"}
           </Button>
         </form>
@@ -150,57 +162,86 @@ export function CategoriesClientView({ initialData }: CategoriesClientViewProps)
       {categories.length === 0 ? (
         <EmptyState title="No categories yet. Create your first category above." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
-            <Card key={category.id} className="p-4 flex items-center justify-between">
+            <Card key={category.id} className="flex items-center justify-between gap-3 p-4">
               {editingCategoryId === category.id ? (
-                <Input
-                  type="text"
-                  value={editingCategoryName}
-                  onChange={(e) => setEditingCategoryName(e.target.value)}
-                  className="px-2 py-1 text-sm"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      saveEditing(category.id);
-                    } else if (e.key === "Escape") {
-                      cancelEditing();
-                    }
-                  }}
-                />
+                <div className="min-w-0 flex-1">
+                  <label className="sr-only" htmlFor={`edit-category-${category.id}`}>
+                    Edit category name
+                  </label>
+                  <Input
+                    id={`edit-category-${category.id}`}
+                    type="text"
+                    value={editingCategoryName}
+                    onChange={(e) => setEditingCategoryName(e.target.value)}
+                    className="w-full text-sm"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        saveEditing(category.id);
+                      } else if (e.key === "Escape") {
+                        cancelEditing();
+                      }
+                    }}
+                  />
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    Press Enter to save or Escape to cancel.
+                  </p>
+                </div>
               ) : (
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">{category.name}</span>
+                <span className="min-w-0 truncate font-medium text-zinc-900 dark:text-zinc-100">
+                  {category.name}
+                </span>
               )}
               
-              <div className="flex items-center gap-3">
+              <div className="flex shrink-0 items-center gap-2">
                 {editingCategoryId === category.id ? (
-                  <button
-                    onClick={() => cancelEditing()}
-                    disabled={isPendingUpdate}
-                    className="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isPendingUpdate ? "Saving..." : "Cancel"}
-                  </button>
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => saveEditing(category.id)}
+                      disabled={isPendingUpdate || !editingCategoryName.trim()}
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <CheckIcon size={14} aria-hidden="true" />
+                      {isPendingUpdate ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={cancelEditing}
+                      disabled={isPendingUpdate}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => startEditing(category)}
                     disabled={isPendingDelete || isPendingUpdate}
-                    className="text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
+                    aria-label={`Edit ${category.name}`}
                     title="Edit category"
                   >
-                    <PencilIcon size={16} />
+                    <PencilIcon size={16} aria-hidden="true" />
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => openDeleteConfirm(category.id)}
                   disabled={isPendingDelete || isPendingUpdate}
-                  className="text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  aria-label={`Delete ${category.name}`}
                   title="Delete category"
                 >
                   {deletingCategoryId === category.id && isPendingDelete ? (
-                    <span className="text-xs">Deleting...</span>
+                    <span className="text-xs" aria-live="polite">...</span>
                   ) : (
-                    <TrashIcon size={16} />
+                    <TrashIcon size={16} aria-hidden="true" />
                   )}
                 </button>
               </div>

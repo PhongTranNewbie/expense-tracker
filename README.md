@@ -7,7 +7,7 @@ A portfolio-style expense tracker built with Next.js, Prisma, Tailwind CSS, Serv
 - **Framework:** [Next.js](https://nextjs.org/) 16 (App Router)
 - **UI:** [React](https://react.dev/) 19, [Tailwind CSS](https://tailwindcss.com/) v4
 - **Language:** TypeScript
-- **Data:** Prisma + SQLite
+- **Data:** Prisma + Neon PostgreSQL
 - **Auth:** Auth.js / NextAuth v5 with GitHub OAuth
 - **Linting:** ESLint (`eslint-config-next`)
 
@@ -44,19 +44,24 @@ Copy-Item .env.example .env
 3. Fill in `.env`:
 
 ```bash
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST-pooler.REGION.aws.neon.tech/DATABASE?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST.REGION.aws.neon.tech/DATABASE?sslmode=require"
 AUTH_SECRET="your-auth-secret"
 AUTH_URL="http://localhost:3000"
 AUTH_GITHUB_ID="your-github-oauth-client-id"
 AUTH_GITHUB_SECRET="your-github-oauth-client-secret"
 ```
 
-4. Set up the local database:
+`DATABASE_URL` is the pooled Neon connection used by the application and Vercel. `DIRECT_URL` is the unpooled connection used by Prisma Migrate. Preserve any additional TLS parameters supplied by Neon, such as `channel_binding=require`, when configuring real URLs.
+
+4. Set up an empty, disposable development database:
 
 ```bash
 npx prisma migrate dev
 npx prisma db seed
 ```
+
+Never run `prisma migrate dev` against production. The seed clears existing expense and category data, so run it only against a disposable development database.
 
 5. Start the dev server:
 

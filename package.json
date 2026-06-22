@@ -7,6 +7,7 @@
     "build": "next build",
     "postinstall": "prisma generate",
     "start": "next start",
+    "test:ownership:postgres": "tsx scripts/postgres-ownership-check.ts",
     "test:smoke": "tsx scripts/auth-ownership-smoke.ts",
     "lint": "eslint"
   },

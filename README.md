@@ -63,6 +63,27 @@ npx prisma db seed
 
 Never run `prisma migrate dev` against production. The seed clears existing expense and category data, so run it only against a disposable development database.
 
+## Production database migrations
+
+Production migrations must be applied with:
+
+```bash
+npx prisma migrate deploy
+```
+
+You can check production migration status with:
+
+```bash
+npx prisma migrate status
+```
+
+Never run these commands against production or shared Neon databases:
+
+```bash
+npx prisma migrate dev
+npx prisma db seed
+```
+
 5. Start the dev server:
 
 ```bash

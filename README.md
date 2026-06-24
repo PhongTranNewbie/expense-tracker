@@ -84,6 +84,21 @@ npx prisma migrate dev
 npx prisma db seed
 ```
 
+## Production deployment status
+
+The app is deployed on Vercel using Neon PostgreSQL. Prisma is configured with the PostgreSQL datasource in `prisma/schema.prisma`, and production database changes should continue to use `npx prisma migrate deploy`.
+
+Vercel production environment variables should stay separated from local development values:
+
+- `DATABASE_URL`: pooled Neon runtime connection
+- `DIRECT_URL`: unpooled Neon migration connection
+- `AUTH_URL`: production app URL
+- `AUTH_SECRET`
+- `AUTH_TRUST_HOST=true`
+- `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` from the production GitHub OAuth app
+
+Keep the local GitHub OAuth app separate from the production GitHub OAuth app so callback URLs and credentials do not get mixed. The local SQLite `.db` files are inactive archives only; do not use them for the PostgreSQL production workflow.
+
 5. Start the dev server:
 
 ```bash
@@ -136,3 +151,14 @@ Path alias `@/*` is configured in `tsconfig.json` for imports from the repositor
 
 - Budgets with alerts and period comparisons
 - CSV import/export and optional bank connections
+
+## Post-deployment follow-up roadmap
+
+- Run a production smoke test after each deployment: login, create category, create expense, edit expense, delete expense, view dashboard, and view reports.
+- Add Auth/user ownership regression coverage for cross-user category and expense isolation.
+- Replace the Google Fonts runtime dependency with a local font fallback if restricted build environments continue to block `fonts.googleapis.com`.
+- Convert the old SQLite smoke script to the guarded PostgreSQL workflow or remove it entirely.
+- Consider a future migration from `Float` to `Decimal` for `Expense.amount`.
+- Add optional CI checks for `npx tsc --noEmit`, `npx prisma validate`, and `npm run build`.
+- Add optional E2E coverage for login and CRUD using a safe test account/environment.
+- Keep local SQLite files archived, ignored, and inactive.

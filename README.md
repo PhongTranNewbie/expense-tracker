@@ -1,23 +1,48 @@
 # Expense Tracker
 
-A portfolio-style expense tracker built with Next.js, Prisma, Tailwind CSS, Server Actions, Zod validation, and Auth.js GitHub OAuth.
+A production-style expense tracker for managing personal spending by category. It demonstrates a full-stack Next.js app with authenticated, user-owned data, PostgreSQL persistence, deployment on Vercel, and database-level ownership constraints.
 
-## Tech stack
+## Live Demo
 
-- **Framework:** [Next.js](https://nextjs.org/) 16 (App Router)
-- **UI:** [React](https://react.dev/) 19, [Tailwind CSS](https://tailwindcss.com/) v4
-- **Language:** TypeScript
-- **Data:** Prisma + Neon PostgreSQL
-- **Auth:** Auth.js / NextAuth v5 with GitHub OAuth
-- **Linting:** ESLint (`eslint-config-next`)
+Live demo: [https://expense-tracker-alpha-two-17.vercel.app](https://expense-tracker-alpha-two-17.vercel.app)
+
+## Tech Stack
+
+- Next.js App Router
+- React
+- TypeScript
+- Prisma
+- PostgreSQL / Neon
+- Auth.js / GitHub OAuth
+- Vercel
+- Tailwind CSS
 
 ## Features
 
-- Responsive **dashboard shell** with sidebar and top bar (mobile-friendly navigation)
-- GitHub login/logout
-- User-owned categories and expenses
-- Dashboard summary stats and reports scoped to the signed-in user
+- GitHub sign-in with Auth.js
+- Per-user expenses and categories
+- CRUD for expenses and categories
+- Dashboard summary cards for monthly spending
+- Reports for spending trends and category breakdowns
+- Production PostgreSQL ownership constraints for Category/Expense data
+- Responsive dashboard shell with mobile-friendly navigation
 - Default categories for new users
+
+## Safety and Architecture
+
+Category and Expense ownership is enforced in both application logic and database constraints. Expense records include the signed-in user's `userId`, and the PostgreSQL schema prevents an expense from referencing another user's category through a composite foreign key.
+
+## Production Notes
+
+The app is deployed on Vercel with Neon PostgreSQL. Production uses a pooled `DATABASE_URL` for runtime traffic and an unpooled `DIRECT_URL` for Prisma Migrate. Production migrations use:
+
+```bash
+npx prisma migrate deploy
+```
+
+Never run `prisma migrate dev` or `prisma db seed` against production or shared Neon databases.
+
+For a manual post-deploy checklist, see [`docs/production-smoke-test.md`](docs/production-smoke-test.md).
 
 ## Run locally
 

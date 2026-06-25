@@ -9,9 +9,7 @@ const nav = [
   { href: "/", label: "Dashboard" },
   { href: "/expenses", label: "Expenses" },
   { href: "/categories", label: "Categories" },
-  { href: "/budgets", label: "Budgets" },
   { href: "/reports", label: "Reports" },
-  { href: "/settings", label: "Settings" },
 ] as const;
 
 const pageTitles: Record<string, string> = {

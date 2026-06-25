@@ -137,34 +137,33 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   const lastMonthStart = startOfMonth(subMonths(now, 1));
   const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-  // Fetch current month expenses
-  const currentMonthExpenses = await prisma.expense.findMany({
-    where: {
-      userId,
-      date: {
-        gte: currentMonthStart,
-        lte: currentMonthEnd,
-      },
-    },
-    include: {
-      category: {
-        select: {
-          name: true,
+  const [currentMonthExpenses, lastMonthExpenses] = await Promise.all([
+    prisma.expense.findMany({
+      where: {
+        userId,
+        date: {
+          gte: currentMonthStart,
+          lte: currentMonthEnd,
         },
       },
-    },
-  });
-
-  // Fetch last month expenses
-  const lastMonthExpenses = await prisma.expense.findMany({
-    where: {
-      userId,
-      date: {
-        gte: lastMonthStart,
-        lte: lastMonthEnd,
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
       },
-    },
-  });
+    }),
+    prisma.expense.findMany({
+      where: {
+        userId,
+        date: {
+          gte: lastMonthStart,
+          lte: lastMonthEnd,
+        },
+      },
+    }),
+  ]);
 
   // Calculate totals
   const currentMonthTotal = currentMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);

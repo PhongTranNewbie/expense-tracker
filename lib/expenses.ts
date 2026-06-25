@@ -25,6 +25,26 @@ export async function getExpenses(userId: string) {
   }
 }
 
+export async function getRecentExpenses(userId: string, limit = 5) {
+  try {
+    return await prisma.expense.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        category: true,
+      },
+      orderBy: {
+        date: "desc",
+      },
+      take: limit,
+    });
+  } catch (error) {
+    console.error("Error fetching recent expenses:", error);
+    throw new Error("Failed to fetch recent expenses");
+  }
+}
+
 export async function getExpenseById(userId: string, id: string) {
   try {
     const expense = await prisma.expense.findFirst({

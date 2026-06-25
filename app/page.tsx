@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { RecentExpensesPreview } from "@/components/expenses/recent-expenses-preview";
 import { SummaryCard } from "@/components/ui/summary-card";
-import { getExpenses } from "@/lib/expenses";
+import { getRecentExpenses } from "@/lib/expenses";
 import { getDashboardStats } from "@/lib/stats";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
@@ -17,7 +17,7 @@ export default async function Home() {
   }
 
   const [dbExpenses, stats] = await Promise.all([
-    getExpenses(userId),
+    getRecentExpenses(userId),
     getDashboardStats(userId),
   ]);
 
